@@ -23,7 +23,12 @@ export const handleGetAllProducts = async (req: Request, res: Response) => {
 };
 
 export const handleGetProductById = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de producto inválido' });
+  }
+
   try {
     const product = await productService.getProductById(id);
     if (!product) {
@@ -68,11 +73,18 @@ export const handleCreateProduct = async (req: Request, res: Response) => {
 };
 
 export const handleUpdateProduct = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de producto inválido' });
+  }
+
   const data = req.body;
 
   // Sanitizar campos eliminados
   if ('stockMinimo' in data) delete data.stockMinimo;
+  // No permitir editar el código SKU
+  if ('code' in data) delete data.code;
 
   // Conversión de tipos para los campos que vienen
   if (data.price) data.price = new Decimal(data.price);
@@ -92,7 +104,12 @@ export const handleUpdateProduct = async (req: Request, res: Response) => {
 };
 
 export const handleDeleteProduct = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de producto inválido' });
+  }
+
   try {
     await productService.deleteProduct(id);
     res.status(204).send(); // 204 No Content
@@ -102,7 +119,11 @@ export const handleDeleteProduct = async (req: Request, res: Response) => {
 };
 
 export const handleUploadProductImage = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de producto inválido' });
+  }
 
   if (!req.file) {
     return res.status(400).json({ message: 'No se subió ningún archivo de imagen.' });
@@ -123,7 +144,11 @@ export const handleUploadProductImage = async (req: Request, res: Response) => {
 };
 
 export const handleUploadProductImages = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de producto inválido' });
+  }
 
   if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
     return res.status(400).json({ message: 'No se subieron archivos de imagen.' });
@@ -149,7 +174,12 @@ export const handleUploadProductImages = async (req: Request, res: Response) => 
 };
 
 export const handleUploadProductImageByIndex = async (req: Request, res: Response) => {
-  const { id, index } = req.params;
+  const id = parseInt(req.params.id, 10);
+  const { index } = req.params;
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de producto inválido' });
+  }
 
   if (!req.file) {
     return res.status(400).json({ message: 'No se subió ningún archivo de imagen.' });
@@ -184,7 +214,12 @@ export const handleUploadProductImageByIndex = async (req: Request, res: Respons
 };
 
 export const handleDeleteProductImageByIndex = async (req: Request, res: Response) => {
-  const { id, index } = req.params;
+  const id = parseInt(req.params.id, 10);
+  const { index } = req.params;
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de producto inválido' });
+  }
 
   // Validar que el índice sea válido (0, 1, 2)
   const imageIndex = parseInt(index, 10);

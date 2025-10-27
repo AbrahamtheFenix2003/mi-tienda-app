@@ -35,7 +35,7 @@ export default function ProductosPage() {
   });
 
   // Mutación para subir una imagen individual por índice
-  const uploadImageByIndexMutation = useMutation<Product, unknown, { productId: string; imageFile: File; index: number }>({
+  const uploadImageByIndexMutation = useMutation<Product, unknown, { productId: number; imageFile: File; index: number }>({
     mutationFn: ({ productId, imageFile, index }) => uploadProductImageByIndex(productId, imageFile, index),
     onSuccess: (updatedProduct: Product) => {
       // Actualizar el producto seleccionado con los nuevos datos
@@ -51,7 +51,7 @@ export default function ProductosPage() {
   });
 
   // Mutación para eliminar una imagen individual por índice
-  const deleteImageByIndexMutation = useMutation<Product, unknown, { productId: string; index: number }>({
+  const deleteImageByIndexMutation = useMutation<Product, unknown, { productId: number; index: number }>({
     mutationFn: ({ productId, index }) => deleteProductImageByIndex(productId, index),
     onSuccess: (updatedProduct: Product) => {
       // Actualizar el producto seleccionado con los nuevos datos
@@ -67,7 +67,7 @@ export default function ProductosPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ProductFormData> }) => updateProduct(id, data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<ProductFormData> }) => updateProduct(id, data),
     onSuccess: (updatedProduct: Product) => {
       setIsEditModalOpen(false);
       setSelectedProduct(null);
@@ -82,7 +82,7 @@ export default function ProductosPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteProduct(id),
+    mutationFn: (id: number) => deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setIsDeleteModalOpen(false);

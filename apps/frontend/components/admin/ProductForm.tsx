@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { ProductFormData, Category } from '@mi-tienda/types';
 import { Loader2, UploadCloud, Image as ImageIcon, X } from 'lucide-react';
+import Image from 'next/image';
+import { isLocalUrl } from '@/lib/imageUtils';
 
 // --- Componentes de Formulario Reutilizables ---
 
@@ -246,14 +248,31 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                       <div className="space-y-1 text-center w-full">
                         {displayUrl ? (
                           <div className="flex items-center justify-center h-32 w-full">
-                            <img
-                              src={displayUrl}
-                              alt={`Vista previa ${index + 1}`}
-                              className="max-h-32 max-w-full object-contain rounded"
-                              onError={(e) => {
-                                console.error(`Error al cargar imagen ${index + 1}:`, displayUrl);
-                              }}
-                            />
+                            {isLocalUrl(displayUrl) ? (
+                              // Usar <img> nativo para URLs locales (blob, data, localhost)
+                              // Next.js Image no soporta blob/data URLs y tiene problemas con localhost
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={displayUrl}
+                                alt={`Vista previa ${index + 1}`}
+                                className="max-h-32 max-w-full object-contain rounded"
+                                onError={() => {
+                                  console.error(`Error al cargar imagen ${index + 1}:`, displayUrl);
+                                }}
+                              />
+                            ) : (
+                              // Usar Next.js Image para URLs de producción (optimización)
+                              <Image
+                                src={displayUrl}
+                                alt={`Vista previa ${index + 1}`}
+                                width={128}
+                                height={128}
+                                className="max-h-32 max-w-full object-contain rounded"
+                                onError={() => {
+                                  console.error(`Error al cargar imagen ${index + 1}:`, displayUrl);
+                                }}
+                              />
+                            )}
                           </div>
                         ) : (
                           <div>

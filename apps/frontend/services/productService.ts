@@ -40,7 +40,7 @@ export const createProduct = async (data: ProductFormData): Promise<Product> => 
  * @param data - Los datos parciales del producto a actualizar (validados por Zod).
  * @returns El producto actualizado.
  */
-export const updateProduct = async (id: string, data: Partial<ProductFormData>): Promise<Product> => {
+export const updateProduct = async (id: number, data: Partial<ProductFormData>): Promise<Product> => {
   try {
     // El token se adjunta automáticamente
     const response = await api.put<Product>(`/products/${id}`, data);
@@ -56,7 +56,7 @@ export const updateProduct = async (id: string, data: Partial<ProductFormData>):
  * @param id - El ID del producto a eliminar.
  * @returns Una promesa que se resuelve cuando la eliminación es exitosa.
  */
-export const deleteProduct = async (id: string): Promise<void> => {
+export const deleteProduct = async (id: number): Promise<void> => {
   try {
     // El token se adjunta automáticamente
     await api.delete(`/products/${id}`);
@@ -72,7 +72,7 @@ export const deleteProduct = async (id: string): Promise<void> => {
  * @param imageFile - El archivo de imagen (objeto File).
  * @returns El producto actualizado con la nueva URL de imagen.
  */
-export const uploadProductImage = async (productId: string, imageFile: File): Promise<Product> => {
+export const uploadProductImage = async (productId: number, imageFile: File): Promise<Product> => {
   // 1. Crear FormData
   const formData = new FormData();
   formData.append('image', imageFile); // La clave 'image' debe coincidir con upload.single('image')
@@ -101,7 +101,7 @@ export const uploadProductImage = async (productId: string, imageFile: File): Pr
  * @param imageFiles - Array de archivos de imagen (objetos File).
  * @returns El producto actualizado con las nuevas URLs de imágenes.
  */
-export const uploadProductImages = async (productId: string, imageFiles: File[]): Promise<Product> => {
+export const uploadProductImages = async (productId: number, imageFiles: File[]): Promise<Product> => {
   const formData = new FormData();
 
   // Limitar a 3 imágenes máximo
@@ -134,7 +134,7 @@ export const uploadProductImages = async (productId: string, imageFiles: File[])
  * @param index - Índice de la imagen (0, 1, o 2).
  * @returns El producto actualizado con la nueva URL de imagen.
  */
-export const uploadProductImageByIndex = async (productId: string, imageFile: File, index: number): Promise<Product> => {
+export const uploadProductImageByIndex = async (productId: number, imageFile: File, index: number): Promise<Product> => {
   const formData = new FormData();
   formData.append('image', imageFile);
 
@@ -161,7 +161,7 @@ export const uploadProductImageByIndex = async (productId: string, imageFile: Fi
  * @param index - Índice de la imagen a eliminar (0, 1, o 2).
  * @returns El producto actualizado con la imagen eliminada.
  */
-export const deleteProductImageByIndex = async (productId: string, index: number): Promise<Product> => {
+export const deleteProductImageByIndex = async (productId: number, index: number): Promise<Product> => {
   try {
     const response = await api.delete<Product>(
       `/products/${productId}/image/${index}`

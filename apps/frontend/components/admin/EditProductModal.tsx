@@ -83,6 +83,14 @@ export const EditProductModal = ({
       title="Editar Producto"
       size="xl"
     >
+      {productToEdit && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">SKU:</span>{' '}
+            <span className="font-mono text-gray-900">{productToEdit.code}</span>
+          </div>
+        </div>
+      )}
       <ProductForm
         key={productToEdit?.id || 'new'} // Forzar re-render cuando cambia el producto
         form={form as unknown as UseFormReturn<ProductFormData>}

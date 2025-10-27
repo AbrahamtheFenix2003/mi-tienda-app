@@ -18,7 +18,7 @@ export default function NuevoProductoPage() {
   const queryClient = useQueryClient();
 
   // --- Estado local para el producto recién creado y las imágenes pendientes ---
-  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
+  const [createdProductId, setCreatedProductId] = useState<number | null>(null);
   const [pendingImages, setPendingImages] = useState<{ file: File; index: number }[]>([]);
 
   // --- Query para categorías ---
@@ -43,7 +43,7 @@ export default function NuevoProductoPage() {
   });
 
   // --- Mutación para subir una imagen por índice (Paso 2) ---
-  const uploadImageMutation = useMutation<Product, unknown, { productId: string; imageFile: File; index: number }>({
+  const uploadImageMutation = useMutation<Product, unknown, { productId: number; imageFile: File; index: number }>({
     mutationFn: ({ productId, imageFile, index }) => uploadProductImageByIndex(productId, imageFile, index),
     onSuccess: (updatedProduct: Product) => {
       console.log(`Imagen ${updatedProduct.name} subida`);

@@ -25,3 +25,20 @@ export function getAbsoluteImageUrl(imageUrl: string | null | undefined): string
 
   return `${backendUrl}${normalizedUrl}`;
 }
+
+/**
+ * Determina si una URL es una URL local que no debe ser optimizada por Next.js Image
+ * Esto incluye: blob URLs, data URLs, y URLs de localhost
+ * @param url - URL a verificar
+ * @returns true si es una URL local/temporal que requiere <img> en vez de <Image />
+ */
+export function isLocalUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+
+  return (
+    url.startsWith('blob:') ||
+    url.startsWith('data:') ||
+    url.includes('localhost') ||
+    url.includes('127.0.0.1')
+  );
+}

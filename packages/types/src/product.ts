@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Category } from './category'; // Importa desde este mismo paquete
 
 export interface Product {
-  id: string;
+  id: number;
   name: string;
   slug: string;
   description?: string | null;
@@ -12,12 +12,13 @@ export interface Product {
   originalPrice?: string | null;
   acquisitionCost?: string | null;
   stock: number;
-  code?: string | null;
+  code: string; // Obligatorio en Prisma schema
   imageUrl?: string | null;
   imageUrl2?: string | null;
   imageUrl3?: string | null;
   imageUrl4?: string | null;
   isFeatured: boolean;
+  isActive: boolean;
   tags: string[];
   createdAt: string;
   updatedAt: string;

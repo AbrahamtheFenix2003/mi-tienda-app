@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
         pathname: '/uploads/**',
       },
     ],
+    // Desactivar optimización en desarrollo para localhost
+    // Next.js Image optimizer tiene problemas con localhost en desarrollo
+    unoptimized: process.env.NODE_ENV === 'development',
   },
 };
 

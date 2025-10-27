@@ -4,7 +4,8 @@
 
 import { Product } from '@mi-tienda/types';
 import { Edit, Trash2, Package } from 'lucide-react';
-import { getAbsoluteImageUrl } from '@/lib/imageUtils';
+import Image from 'next/image';
+import { getAbsoluteImageUrl, isLocalUrl } from '@/lib/imageUtils';
 
 interface ProductTableProps {
   products: Product[];
@@ -60,11 +61,26 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="shrink-0 h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
                       {product.imageUrl ? (
-                        <img
-                          src={getAbsoluteImageUrl(product.imageUrl) || '/placeholder.png'}
-                          alt={product.name}
-                          className="object-cover h-12 w-12"
-                        />
+                        (() => {
+                          const absoluteUrl = getAbsoluteImageUrl(product.imageUrl) || '/placeholder.png';
+                          // Usar <img> para URLs locales (localhost), <Image /> para producción
+                          return isLocalUrl(absoluteUrl) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={absoluteUrl}
+                              alt={product.name}
+                              className="object-cover h-12 w-12 rounded-md"
+                            />
+                          ) : (
+                            <Image
+                              src={absoluteUrl}
+                              alt={product.name}
+                              width={48}
+                              height={48}
+                              className="object-cover rounded-md"
+                            />
+                          );
+                        })()
                       ) : (
                         <Package className="h-6 w-6 text-gray-400" />
                       )}
@@ -77,7 +93,7 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
                       {product.name}
                     </div>
                     <div className="text-xs text-gray-500 font-mono">
-                      {product.code || 'Sin SKU'}
+                      {product.code}
                     </div>
                   </td>
 
