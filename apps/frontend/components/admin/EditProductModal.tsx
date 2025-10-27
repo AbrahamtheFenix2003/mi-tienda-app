@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm, type Resolver, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { productSchema, ProductFormData, Product, Category } from '@mi-tienda/types';
@@ -17,8 +17,8 @@ interface EditProductModalProps {
   onFormSubmit: (data: ProductFormData) => void;
   isLoading: boolean;
   categories: Category[];
-  // Prop para propagar el cambio de imagen al padre (setEditImageFile)
-  onImageChange: (file: File | null) => void;
+  // Prop para propagar el cambio de imágenes al padre
+  onImagesChange: (files: File[]) => void;
 }
 
 export const EditProductModal = ({
@@ -28,7 +28,7 @@ export const EditProductModal = ({
   onFormSubmit,
   isLoading,
   categories,
-  onImageChange,
+  onImagesChange,
 }: EditProductModalProps) => {
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
@@ -66,12 +66,21 @@ export const EditProductModal = ({
     onFormSubmit(data);
   };
 
+  const currentImageUrls = useMemo(
+    () => [
+      getAbsoluteImageUrl(productToEdit?.imageUrl),
+      getAbsoluteImageUrl(productToEdit?.imageUrl2),
+      getAbsoluteImageUrl(productToEdit?.imageUrl3),
+    ],
+    [productToEdit?.imageUrl, productToEdit?.imageUrl2, productToEdit?.imageUrl3],
+  );
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={() => {
-        // Aseguramos limpiar la imagen seleccionada cuando se cierre el modal
-        onImageChange(null);
+        // Aseguramos limpiar las imágenes seleccionadas cuando se cierre el modal
+        onImagesChange([]);
         onClose();
       }}
       title="Editar Producto"
@@ -82,8 +91,8 @@ export const EditProductModal = ({
         onSubmit={handleInternalSubmit}
         isLoading={isLoading}
         categories={categories}
-        onImageChange={onImageChange}
-        currentImageUrl={getAbsoluteImageUrl(productToEdit?.imageUrl)}
+        onImagesChange={onImagesChange}
+        currentImageUrls={currentImageUrls}
       />
     </Modal>
   );
