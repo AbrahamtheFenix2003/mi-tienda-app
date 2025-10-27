@@ -10,7 +10,6 @@ const validateProductData = (data: any): { error?: string } => {
   if (!data.name) return { error: 'El campo "name" es requerido' };
   if (!data.slug) return { error: 'El campo "slug" es requerido' };
   if (data.price === undefined) return { error: 'El campo "price" es requerido' };
-  if (data.stock === undefined) return { error: 'El campo "stock" es requerido' };
   return {};
 };
 
@@ -53,7 +52,7 @@ export const handleCreateProduct = async (req: Request, res: Response) => {
     price: new Decimal(data.price),
     originalPrice: data.originalPrice ? new Decimal(data.originalPrice) : undefined,
     acquisitionCost: data.acquisitionCost ? new Decimal(data.acquisitionCost) : undefined,
-    stock: parseInt(data.stock, 10),
+    stock: data.stock !== undefined ? parseInt(data.stock, 10) : 0,
   };
 
   try {

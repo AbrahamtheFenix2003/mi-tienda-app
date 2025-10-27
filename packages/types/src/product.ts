@@ -58,8 +58,11 @@ export const productSchema = z.object({
   ),
 
   stock: z.preprocess(
-    (val) => parseInt(String(val), 10),
-    z.number().int({ message: "El stock debe ser un número entero." }).min(0, { message: "El stock no puede ser negativo." })
+    (val) => {
+      if (val === null || val === undefined || String(val).trim() === '') return 0;
+      return parseInt(String(val), 10);
+    },
+    z.number().int({ message: "El stock debe ser un número entero." }).min(0, { message: "El stock no puede ser negativo." }).default(0).optional()
   ),
 
   categoryId: z.preprocess(

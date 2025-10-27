@@ -52,7 +52,6 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
           <tbody className="bg-white divide-y divide-gray-200">
             {products.map((product) => {
               const stock = product.stock || 0;
-              const stockClass = stock === 0 ? 'text-red-600' : stock <= 5 ? 'text-yellow-600' : 'text-green-600';
 
               return (
                 <tr key={product.id} className="hover:bg-gray-50 transition-colors">
@@ -100,7 +99,7 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
 
                   {/* Stock */}
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`text-sm font-semibold ${stockClass}`}>
+                    <span className="text-sm font-semibold text-gray-700">
                       {stock}
                     </span>
                   </td>

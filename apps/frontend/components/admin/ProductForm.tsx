@@ -210,15 +210,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               placeholder="1500.00"
             />
             <FormInput
-              label="Stock Inicial"
-              id="stock"
-              type="number"
-              step="1"
-              {...register('stock')}
-              error={errors.stock?.message as string | undefined}
-              placeholder="50"
-            />
-            <FormInput
               label="Precio Original (S/) (Opcional)"
               id="originalPrice"
               type="number"

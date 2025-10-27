@@ -51,7 +51,6 @@ export const EditProductModal = ({
           productToEdit.acquisitionCost === null || productToEdit.acquisitionCost === undefined || productToEdit.acquisitionCost === ''
             ? null
             : Number(productToEdit.acquisitionCost),
-        stock: productToEdit.stock ?? 0,
         categoryId: productToEdit.categoryId ?? '',
         // NO incluimos imageUrl aquí - solo se usa para nuevas imágenes
         imageUrl: undefined,
