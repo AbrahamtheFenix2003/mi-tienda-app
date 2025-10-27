@@ -11,7 +11,6 @@ export type ProductData = {
   originalPrice?: Prisma.Decimal;
   acquisitionCost?: Prisma.Decimal;
   stock: number;
-  stockMinimo?: number;
   code?: string;
   imageUrl?: string;
   imageUrl2?: string;
@@ -52,7 +51,6 @@ const mapProduct = (product: PrismaProductWithCategory): Product => ({
   originalPrice: product.originalPrice ? product.originalPrice.toString() : null,
   acquisitionCost: product.acquisitionCost ? product.acquisitionCost.toString() : null,
   stock: product.stock,
-  stockMinimo: product.stockMinimo ?? null,
   code: product.code ?? null,
   imageUrl: product.imageUrl ?? null,
   imageUrl2: product.imageUrl2 ?? null,
@@ -103,7 +101,6 @@ export const createProduct = async (data: ProductData): Promise<Product> => {
       // Aseguramos que los campos opcionales que no vienen se manejen
       originalPrice: data.originalPrice || undefined,
       acquisitionCost: data.acquisitionCost || undefined,
-      stockMinimo: data.stockMinimo || undefined,
       code: data.code || undefined,
       description: data.description || undefined,
       imageUrl: data.imageUrl || undefined,

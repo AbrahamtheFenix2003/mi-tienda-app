@@ -70,6 +70,7 @@ npx prisma migrate dev          # Create and apply migration
 npx prisma migrate deploy       # Apply migrations (production)
 npx prisma generate            # Regenerate Prisma Client
 npx prisma db push             # Push schema changes without migration
+npm run migrate:dev --workspace=@mi-tienda/backend -- --name <migration-name> # Create migration with name
 ```
 
 The backend runs on port 8080 by default. Uses ESM modules with ts-node loader.

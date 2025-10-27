@@ -38,6 +38,8 @@ export const handleGetProductById = async (req: Request, res: Response) => {
 
 export const handleCreateProduct = async (req: Request, res: Response) => {
   const data = req.body;
+  // Sanitizar campos eliminados
+  if ('stockMinimo' in data) delete data.stockMinimo;
 
   // Validación básica
   const { error } = validateProductData(data);
@@ -52,7 +54,6 @@ export const handleCreateProduct = async (req: Request, res: Response) => {
     originalPrice: data.originalPrice ? new Decimal(data.originalPrice) : undefined,
     acquisitionCost: data.acquisitionCost ? new Decimal(data.acquisitionCost) : undefined,
     stock: parseInt(data.stock, 10),
-    stockMinimo: data.stockMinimo ? parseInt(data.stockMinimo, 10) : undefined,
   };
 
   try {
@@ -71,12 +72,14 @@ export const handleUpdateProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
   const data = req.body;
 
+  // Sanitizar campos eliminados
+  if ('stockMinimo' in data) delete data.stockMinimo;
+
   // Conversión de tipos para los campos que vienen
   if (data.price) data.price = new Decimal(data.price);
   if (data.originalPrice) data.originalPrice = new Decimal(data.originalPrice);
   if (data.acquisitionCost) data.acquisitionCost = new Decimal(data.acquisitionCost);
   if (data.stock) data.stock = parseInt(data.stock, 10);
-  if (data.stockMinimo) data.stockMinimo = parseInt(data.stockMinimo, 10);
 
   try {
     const updatedProduct = await productService.updateProduct(id, data);

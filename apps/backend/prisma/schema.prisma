@@ -124,8 +124,6 @@ model Product {
   originalPrice   Decimal?  @db.Decimal(10, 2) // Precio antes de oferta
   acquisitionCost Decimal?  @db.Decimal(10, 2) // Costo promedio (actualizado por lotes) o fijo
   stock           Int       @default(0) // Stock total (calculado desde lotes)
-  stockMinimo     Int?      @default(5)  // Para alertas
-  stockMaximo     Int?      @default(100) // Para alertas
   code            String?   @unique // SKU
   imageUrl        String?
   imageUrl2       String?

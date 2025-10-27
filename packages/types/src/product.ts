@@ -12,7 +12,6 @@ export interface Product {
   originalPrice?: string | null;
   acquisitionCost?: string | null;
   stock: number;
-  stockMinimo?: number | null;
   code?: string | null;
   imageUrl?: string | null;
   imageUrl2?: string | null;
