@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchProducts, updateProduct, deleteProduct } from '@/services/productService';
+import { fetchProducts, updateProduct, deleteProduct, uploadProductImage } from '@/services/productService';
 import { fetchCategories } from '@/services/categoryService';
 import { ProductTable } from '@/components/admin/ProductTable';
 import { EditProductModal } from '@/components/admin/EditProductModal';
@@ -22,6 +22,7 @@ export default function ProductosPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
 
   // Queries
   const { data: products, isLoading: isLoadingProducts, error: errorProducts } = useQuery({
@@ -35,13 +36,42 @@ export default function ProductosPage() {
   });
 
   // Mutaciones
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ProductFormData> }) => updateProduct(id, data),
-    onSuccess: (updatedProduct) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+  const uploadEditImageMutation = useMutation<Product, unknown, { productId: string; imageFile: File }>({
+    mutationFn: ({ productId, imageFile }) => uploadProductImage(productId, imageFile),
+    onSuccess: (updatedProduct: Product) => {
+      // Cerrar modal y limpiar estado tras subir la imagen de edición
       setIsEditModalOpen(false);
       setSelectedProduct(null);
-      alert(`Producto "${updatedProduct.name}" actualizado.`);
+      setEditImageFile(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      alert(`Producto "${updatedProduct.name}" actualizado y imagen subida con éxito.`);
+    },
+    onError: (error: unknown, variables) => {
+      const e = error as Error;
+      console.error(`Error al subir imagen para producto ${variables?.productId}:`, e);
+      alert(`Error: Los datos del producto se actualizaron, pero falló la subida de la imagen. ${e.message ?? ''}`);
+      // Aseguramos limpieza e invalidación aunque la imagen haya fallado
+      setIsEditModalOpen(false);
+      setSelectedProduct(null);
+      setEditImageFile(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ProductFormData> }) => updateProduct(id, data),
+    onSuccess: (updatedProduct: Product) => {
+      // NO cerrar modal ni invalidar la query aquí inmediatamente.
+      if (editImageFile) {
+        // Si hay fichero seleccionado, subimos la imagen vinculada al producto ya actualizado
+        uploadEditImageMutation.mutate({ productId: updatedProduct.id, imageFile: editImageFile });
+      } else {
+        // Si no hay imagen que subir, cerramos e invalidamos
+        setIsEditModalOpen(false);
+        setSelectedProduct(null);
+        queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+        alert(`Producto "${updatedProduct.name}" actualizado.`);
+      }
     },
     onError: (error: unknown) => {
       const e = error as { message?: string };
@@ -133,11 +163,12 @@ export default function ProductosPage() {
      {/* Modales */}
      <EditProductModal
        isOpen={isEditModalOpen}
-       onClose={() => { setIsEditModalOpen(false); setSelectedProduct(null); }}
+       onClose={() => { setIsEditModalOpen(false); setSelectedProduct(null); setEditImageFile(null); }}
        productToEdit={selectedProduct}
        onFormSubmit={handleUpdateSubmit}
        isLoading={updateMutation.isPending}
        categories={categories || []}
+       onImageChange={setEditImageFile}
      />
 
      <DeleteProductModal

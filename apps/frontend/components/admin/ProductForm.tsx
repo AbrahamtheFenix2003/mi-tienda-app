@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useRef, ChangeEvent } from 'react';
+import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { ProductFormData, Category } from '@mi-tienda/types';
 import { Loader2, UploadCloud, Image as ImageIcon } from 'lucide-react';
-import Image from 'next/image';
 
 // --- Componentes de Formulario Reutilizables ---
 
@@ -104,6 +103,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const formImageUrl = watch('imageUrl');
 
   const displayImageUrl = imagePreview ?? formImageUrl ?? currentImageUrl;
+
+  // Limpiar preview cuando cambie el producto (currentImageUrl)
+  useEffect(() => {
+    setImagePreview(null);
+    if (currentImageUrl) {
+      console.log('URL de imagen actual:', currentImageUrl);
+    }
+  }, [currentImageUrl]);
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -217,15 +224,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               className="mt-1 flex justify-center items-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-rose-400 h-64"
               onClick={handleImageClick}
             >
-              <div className="space-y-1 text-center">
+              <div className="space-y-1 text-center w-full">
                 {displayImageUrl ? (
-                  <Image
-                    src={displayImageUrl}
-                    alt="Vista previa"
-                    width={200}
-                    height={200}
-                    className="mx-auto h-48 w-auto object-contain rounded"
-                  />
+                  <div className="flex items-center justify-center h-48 w-full">
+                    <img
+                      src={displayImageUrl}
+                      alt="Vista previa"
+                      className="max-h-48 max-w-full object-contain rounded"
+                      onError={(e) => {
+                        console.error('Error al cargar imagen:', displayImageUrl);
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div>
                     <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />

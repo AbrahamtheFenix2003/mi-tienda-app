@@ -71,7 +71,14 @@ export const productSchema = z.object({
     z.string().optional().nullable()
   ),
   
-  imageUrl: z.string().url({ message: "URL de imagen inválida." }).optional().nullable(),
+  imageUrl: z.preprocess(
+    (val) => {
+      // Si el valor es null, undefined o string vacío, devolver undefined
+      if (val === null || val === undefined || String(val).trim() === '') return undefined;
+      return val;
+    },
+    z.string().url({ message: "URL de imagen inválida." }).optional()
+  ),
   isFeatured: z.boolean().default(false).optional(),
 });
 

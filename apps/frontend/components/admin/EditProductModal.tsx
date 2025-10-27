@@ -2,12 +2,13 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm, type Resolver, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { productSchema, ProductFormData, Product, Category } from '@mi-tienda/types';
 import { Modal } from '@/components/ui/Modal';
 import { ProductForm } from '@/components/admin/ProductForm';
+import { getAbsoluteImageUrl } from '@/lib/imageUtils';
 
 interface EditProductModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ interface EditProductModalProps {
   onFormSubmit: (data: ProductFormData) => void;
   isLoading: boolean;
   categories: Category[];
+  // Prop para propagar el cambio de imagen al padre (setEditImageFile)
+  onImageChange: (file: File | null) => void;
 }
 
 export const EditProductModal = ({
@@ -25,12 +28,12 @@ export const EditProductModal = ({
   onFormSubmit,
   isLoading,
   categories,
+  onImageChange,
 }: EditProductModalProps) => {
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
   });
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
- 
+
   useEffect(() => {
     if (productToEdit) {
       form.reset({
@@ -48,7 +51,8 @@ export const EditProductModal = ({
             : Number(productToEdit.acquisitionCost),
         stock: productToEdit.stock ?? 0,
         categoryId: productToEdit.categoryId ?? '',
-        imageUrl: productToEdit.imageUrl || undefined,
+        // NO incluimos imageUrl aquí - solo se usa para nuevas imágenes
+        imageUrl: undefined,
         isFeatured: productToEdit.isFeatured ?? false,
       });
     } else {
@@ -57,19 +61,29 @@ export const EditProductModal = ({
   }, [productToEdit, form]);
 
   const handleInternalSubmit = (data: ProductFormData) => {
+    // Delegamos el submit al padre. NO cerramos el modal aquí; el padre decidirá si cerrarlo
+    // tras actualizar y/o subir imagen según su lógica.
     onFormSubmit(data);
-    onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Editar Producto" size="xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {
+        // Aseguramos limpiar la imagen seleccionada cuando se cierre el modal
+        onImageChange(null);
+        onClose();
+      }}
+      title="Editar Producto"
+      size="xl"
+    >
       <ProductForm
         form={form as unknown as UseFormReturn<ProductFormData>}
         onSubmit={handleInternalSubmit}
         isLoading={isLoading}
         categories={categories}
-        onImageChange={setSelectedImage}
-        currentImageUrl={productToEdit?.imageUrl ?? null}
+        onImageChange={onImageChange}
+        currentImageUrl={getAbsoluteImageUrl(productToEdit?.imageUrl)}
       />
     </Modal>
   );

@@ -13,8 +13,12 @@ export function getAbsoluteImageUrl(imageUrl: string | null | undefined): string
     return imageUrl;
   }
 
-  // Si es una URL relativa, agregar el backend URL
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  // Si es una URL relativa, agregar el backend URL (sin /api/v1)
+  // La API está en http://localhost:8080/api/v1 pero los archivos estáticos en http://localhost:8080/uploads
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+
+  // Extraer solo la base URL (sin /api/v1)
+  const backendUrl = apiUrl.replace('/api/v1', '');
 
   // Asegurar que la URL comience con /
   const normalizedUrl = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
