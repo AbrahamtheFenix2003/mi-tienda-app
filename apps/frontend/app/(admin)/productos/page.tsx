@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchProducts, updateProduct, deleteProduct, uploadProductImage } from '@/services/productService';
+import { fetchProducts, updateProduct, deleteProduct, uploadProductImageByIndex, deleteProductImageByIndex } from '@/services/productService';
 import { fetchCategories } from '@/services/categoryService';
 import { ProductTable } from '@/components/admin/ProductTable';
 import { EditProductModal } from '@/components/admin/EditProductModal';
@@ -22,7 +22,6 @@ export default function ProductosPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [editImageFile, setEditImageFile] = useState<File | null>(null);
 
   // Queries
   const { data: products, isLoading: isLoadingProducts, error: errorProducts } = useQuery({
@@ -35,43 +34,45 @@ export default function ProductosPage() {
     queryFn: fetchCategories,
   });
 
-  // Mutaciones
-  const uploadEditImageMutation = useMutation<Product, unknown, { productId: string; imageFile: File }>({
-    mutationFn: ({ productId, imageFile }) => uploadProductImage(productId, imageFile),
+  // Mutación para subir una imagen individual por índice
+  const uploadImageByIndexMutation = useMutation<Product, unknown, { productId: string; imageFile: File; index: number }>({
+    mutationFn: ({ productId, imageFile, index }) => uploadProductImageByIndex(productId, imageFile, index),
     onSuccess: (updatedProduct: Product) => {
-      // Cerrar modal y limpiar estado tras subir la imagen de edición
-      setIsEditModalOpen(false);
-      setSelectedProduct(null);
-      setEditImageFile(null);
+      // Actualizar el producto seleccionado con los nuevos datos
+      setSelectedProduct(updatedProduct);
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      alert(`Producto "${updatedProduct.name}" actualizado y imagen subida con éxito.`);
+      // Removido el alert para mejor UX
     },
     onError: (error: unknown, variables) => {
       const e = error as Error;
-      console.error(`Error al subir imagen para producto ${variables?.productId}:`, e);
-      alert(`Error: Los datos del producto se actualizaron, pero falló la subida de la imagen. ${e.message ?? ''}`);
-      // Aseguramos limpieza e invalidación aunque la imagen haya fallado
-      setIsEditModalOpen(false);
-      setSelectedProduct(null);
-      setEditImageFile(null);
+      console.error(`Error al subir imagen ${variables?.index} para producto ${variables?.productId}:`, e);
+      alert(`Error al subir la imagen: ${e.message ?? 'Error desconocido'}`);
+    },
+  });
+
+  // Mutación para eliminar una imagen individual por índice
+  const deleteImageByIndexMutation = useMutation<Product, unknown, { productId: string; index: number }>({
+    mutationFn: ({ productId, index }) => deleteProductImageByIndex(productId, index),
+    onSuccess: (updatedProduct: Product) => {
+      // Actualizar el producto seleccionado con los nuevos datos
+      setSelectedProduct(updatedProduct);
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      // Removido el alert para mejor UX
+    },
+    onError: (error: unknown, variables) => {
+      const e = error as Error;
+      console.error(`Error al eliminar imagen ${variables?.index} para producto ${variables?.productId}:`, e);
+      alert(`Error al eliminar la imagen: ${e.message ?? 'Error desconocido'}`);
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<ProductFormData> }) => updateProduct(id, data),
     onSuccess: (updatedProduct: Product) => {
-      // NO cerrar modal ni invalidar la query aquí inmediatamente.
-      if (editImageFile) {
-        // Si hay fichero seleccionado, subimos la imagen vinculada al producto ya actualizado
-        uploadEditImageMutation.mutate({ productId: updatedProduct.id, imageFile: editImageFile });
-      } else {
-        // Si no hay imagen que subir, cerramos e invalidamos
-        setIsEditModalOpen(false);
-        setSelectedProduct(null);
-        queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-        alert(`Producto "${updatedProduct.name}" actualizado.`);
-      }
+      setIsEditModalOpen(false);
+      setSelectedProduct(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      alert(`Producto "${updatedProduct.name}" actualizado.`);
     },
     onError: (error: unknown) => {
       const e = error as { message?: string };
@@ -145,6 +146,18 @@ export default function ProductosPage() {
    deleteMutation.mutate(selectedProduct.id);
  };
 
+ const handleImageChange = (file: File, index: number) => {
+   if (!selectedProduct) return;
+   // Subir inmediatamente la imagen cuando se selecciona
+   uploadImageByIndexMutation.mutate({ productId: selectedProduct.id, imageFile: file, index });
+ };
+
+ const handleImageDelete = (index: number) => {
+   if (!selectedProduct) return;
+   // Eliminar inmediatamente la imagen cuando se hace clic en el botón X
+   deleteImageByIndexMutation.mutate({ productId: selectedProduct.id, index });
+ };
+
  return (
    <div className="space-y-6">
      <div className="flex justify-between items-center">
@@ -163,12 +176,13 @@ export default function ProductosPage() {
      {/* Modales */}
      <EditProductModal
        isOpen={isEditModalOpen}
-       onClose={() => { setIsEditModalOpen(false); setSelectedProduct(null); setEditImageFile(null); }}
+       onClose={() => { setIsEditModalOpen(false); setSelectedProduct(null); }}
        productToEdit={selectedProduct}
        onFormSubmit={handleUpdateSubmit}
        isLoading={updateMutation.isPending}
        categories={categories || []}
-       onImageChange={setEditImageFile}
+       onImageChange={handleImageChange}
+       onImageDelete={handleImageDelete}
      />
 
      <DeleteProductModal

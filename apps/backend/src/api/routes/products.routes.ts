@@ -37,8 +37,8 @@ router.delete(
   productController.handleDeleteProduct
 );
  
-// --- NUEVA RUTA PARA SUBIR IMAGEN ---
-// POST /api/v1/products/:id/upload-image
+// --- RUTAS PARA SUBIR IMÁGENES ---
+// POST /api/v1/products/:id/upload-image (una sola imagen)
 router.post(
   '/:id/upload-image',
   authenticateToken,
@@ -46,6 +46,32 @@ router.post(
   upload.single('image'),
   productController.handleUploadProductImage
 );
+
+// POST /api/v1/products/:id/upload-images (múltiples imágenes, hasta 3)
+router.post(
+  '/:id/upload-images',
+  authenticateToken,
+  authorizeRole(SUPER_ADMIN_ONLY),
+  upload.array('images', 3),
+  productController.handleUploadProductImages
+);
+
+// POST /api/v1/products/:id/upload-image/:index (una imagen por índice 0, 1 o 2)
+router.post(
+  '/:id/upload-image/:index',
+  authenticateToken,
+  authorizeRole(SUPER_ADMIN_ONLY),
+  upload.single('image'),
+  productController.handleUploadProductImageByIndex
+);
+
+// DELETE /api/v1/products/:id/image/:index (eliminar imagen por índice 0, 1 o 2)
+router.delete(
+  '/:id/image/:index',
+  authenticateToken,
+  authorizeRole(SUPER_ADMIN_ONLY),
+  productController.handleDeleteProductImageByIndex
+);
 // ------------------------------------
- 
+
 export default router;

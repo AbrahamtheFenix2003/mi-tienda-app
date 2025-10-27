@@ -94,3 +94,81 @@ export const uploadProductImage = async (productId: string, imageFile: File): Pr
     throw error;
   }
 };
+
+/**
+ * (NUEVO) Sube múltiples imágenes para un producto (hasta 3).
+ * @param productId - El ID del producto.
+ * @param imageFiles - Array de archivos de imagen (objetos File).
+ * @returns El producto actualizado con las nuevas URLs de imágenes.
+ */
+export const uploadProductImages = async (productId: string, imageFiles: File[]): Promise<Product> => {
+  const formData = new FormData();
+
+  // Limitar a 3 imágenes máximo
+  const filesToUpload = imageFiles.slice(0, 3);
+  filesToUpload.forEach((file) => {
+    formData.append('images', file); // La clave 'images' debe coincidir con upload.array('images', 3)
+  });
+
+  try {
+    const response = await api.post<Product>(
+      `/products/${productId}/upload-images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error uploading images for product ${productId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * (NUEVO) Sube una imagen individual para un producto en un índice específico.
+ * @param productId - El ID del producto.
+ * @param imageFile - Archivo de imagen (objeto File).
+ * @param index - Índice de la imagen (0, 1, o 2).
+ * @returns El producto actualizado con la nueva URL de imagen.
+ */
+export const uploadProductImageByIndex = async (productId: string, imageFile: File, index: number): Promise<Product> => {
+  const formData = new FormData();
+  formData.append('image', imageFile);
+
+  try {
+    const response = await api.post<Product>(
+      `/products/${productId}/upload-image/${index}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error uploading image ${index} for product ${productId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * (NUEVO) Elimina una imagen individual de un producto en un índice específico.
+ * @param productId - El ID del producto.
+ * @param index - Índice de la imagen a eliminar (0, 1, o 2).
+ * @returns El producto actualizado con la imagen eliminada.
+ */
+export const deleteProductImageByIndex = async (productId: string, index: number): Promise<Product> => {
+  try {
+    const response = await api.delete<Product>(
+      `/products/${productId}/image/${index}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting image ${index} for product ${productId}:`, error);
+    throw error;
+  }
+};

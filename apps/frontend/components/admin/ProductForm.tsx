@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { ProductFormData, Category } from '@mi-tienda/types';
-import { Loader2, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { Loader2, UploadCloud, Image as ImageIcon, X } from 'lucide-react';
 
 // --- Componentes de Formulario Reutilizables ---
 
@@ -80,9 +80,10 @@ interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void | Promise<void>;
   isLoading?: boolean;
   categories: Category[];
-  // Nuevas props para manejo de imagen
-  onImageChange: (file: File | null) => void;
-  currentImageUrl?: string | null;
+  // Nuevas props para manejo de múltiples imágenes
+  onImageChange?: (file: File, index: number) => void;
+  onImageDelete?: (index: number) => void;
+  currentImageUrls?: (string | null)[];
 }
 
 export const ProductForm: React.FC<ProductFormProps> = ({
@@ -91,44 +92,66 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   isLoading = false,
   categories,
   onImageChange,
-  currentImageUrl,
+  onImageDelete,
+  currentImageUrls = [],
 }) => {
   const { register, handleSubmit, formState: { errors }, watch } = form;
 
-  // Estado local para preview de imagen seleccionada
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Estado local para previews de imágenes seleccionadas (hasta 3)
+  const [imagePreviews, setImagePreviews] = useState<(string | null)[]>([null, null, null]);
+  const fileInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
 
-  // Observamos el valor imageUrl del formulario (por si viene en edición)
-  const formImageUrl = watch('imageUrl');
+  // NO usar useEffect para limpiar previews automáticamente
+  // Las previews solo se limpiarán cuando el usuario seleccione una nueva imagen
+  // o cuando se desmonte el componente
 
-  const displayImageUrl = imagePreview ?? formImageUrl ?? currentImageUrl;
-
-  // Limpiar preview cuando cambie el producto (currentImageUrl)
-  useEffect(() => {
-    setImagePreview(null);
-    if (currentImageUrl) {
-      console.log('URL de imagen actual:', currentImageUrl);
-    }
-  }, [currentImageUrl]);
-
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChangeInternal = (index: number) => (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
+
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setImagePreviews(prev => {
+          const newPreviews = [...prev];
+          newPreviews[index] = reader.result as string;
+          return newPreviews;
+        });
       };
       reader.readAsDataURL(file);
-      onImageChange(file);
+
+      // Notificar al padre con el archivo y el índice
+      if (onImageChange) {
+        onImageChange(file, index);
+      }
     } else {
-      setImagePreview(null);
-      onImageChange(null);
+      setImagePreviews(prev => {
+        const newPreviews = [...prev];
+        newPreviews[index] = null;
+        return newPreviews;
+      });
     }
   };
 
-  const handleImageClick = () => {
-    fileInputRef.current?.click();
+  const handleImageClick = (index: number) => () => {
+    fileInputRefs[index].current?.click();
+  };
+
+  const handleDeleteClick = (index: number) => (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevenir que se abra el selector de archivos
+    if (onImageDelete) {
+      onImageDelete(index);
+    }
+  };
+
+  const getDisplayImageUrl = (index: number): string | null => {
+    // Priorizar: preview local > URL del servidor > null
+    if (imagePreviews[index]) return imagePreviews[index];
+    if (currentImageUrls[index]) return currentImageUrls[index];
+    return null;
   };
 
   return (
@@ -215,49 +238,69 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             />
           </div>
 
-          {/* Campo de imagen - se coloca al final para que ocupe todo el ancho en pantallas pequeñas */}
+          {/* Campos de imágenes - hasta 3 imágenes */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Imagen Principal
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Imágenes del Producto (hasta 3)
             </label>
-            <div
-              className="mt-1 flex justify-center items-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-rose-400 h-64"
-              onClick={handleImageClick}
-            >
-              <div className="space-y-1 text-center w-full">
-                {displayImageUrl ? (
-                  <div className="flex items-center justify-center h-48 w-full">
-                    <img
-                      src={displayImageUrl}
-                      alt="Vista previa"
-                      className="max-h-48 max-w-full object-contain rounded"
-                      onError={(e) => {
-                        console.error('Error al cargar imagen:', displayImageUrl);
-                      }}
-                    />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[0, 1, 2].map((index) => {
+                const displayUrl = getDisplayImageUrl(index);
+                return (
+                  <div key={index} className="relative">
+                    <div
+                      className="flex justify-center items-center px-4 pt-4 pb-4 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-rose-400 h-48"
+                      onClick={handleImageClick(index)}
+                    >
+                      <div className="space-y-1 text-center w-full">
+                        {displayUrl ? (
+                          <div className="flex items-center justify-center h-32 w-full">
+                            <img
+                              src={displayUrl}
+                              alt={`Vista previa ${index + 1}`}
+                              className="max-h-32 max-w-full object-contain rounded"
+                              onError={(e) => {
+                                console.error(`Error al cargar imagen ${index + 1}:`, displayUrl);
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <UploadCloud className="mx-auto h-10 w-10 text-gray-400" />
+                            <ImageIcon className="mx-auto h-4 w-4 text-gray-300 mt-2" />
+                          </div>
+                        )}
+                        <div className="flex text-xs text-gray-600 justify-center">
+                          <span className="relative font-medium text-rose-600 hover:text-rose-500">
+                            {displayUrl ? 'Cambiar' : `Imagen ${index + 1}`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">PNG, JPG, WEBP</p>
+                        <input
+                          id={`image-upload-${index}`}
+                          name={`image-${index}`}
+                          type="file"
+                          className="sr-only"
+                          accept="image/*"
+                          ref={fileInputRefs[index]}
+                          onChange={handleImageChangeInternal(index)}
+                        />
+                      </div>
+                    </div>
+                    {/* Botón de eliminar - solo visible si hay imagen */}
+                    {displayUrl && onImageDelete && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteClick(index)}
+                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors"
+                        title="Eliminar imagen"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <div>
-                    <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-                    <ImageIcon className="mx-auto h-4 w-4 text-gray-300 mt-2" />
-                  </div>
-                )}
-                <div className="flex text-sm text-gray-600 justify-center">
-                  <span className="relative font-medium text-rose-600 hover:text-rose-500">
-                    {displayImageUrl ? 'Cambiar imagen' : 'Subir una imagen'}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP hasta 5MB</p>
-                <input
-                  id="image-upload"
-                  name="image"
-                  type="file"
-                  className="sr-only"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                />
-              </div>
+                );
+              })}
             </div>
             {errors.imageUrl && <p className="mt-1 text-xs text-red-600">{errors.imageUrl?.message as string}</p>}
           </div>

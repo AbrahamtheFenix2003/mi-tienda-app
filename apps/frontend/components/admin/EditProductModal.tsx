@@ -17,8 +17,9 @@ interface EditProductModalProps {
   onFormSubmit: (data: ProductFormData) => void;
   isLoading: boolean;
   categories: Category[];
-  // Prop para propagar el cambio de imágenes al padre
-  onImagesChange: (files: File[]) => void;
+  // Prop para propagar el cambio de una imagen individual con su índice
+  onImageChange?: (file: File, index: number) => void;
+  onImageDelete?: (index: number) => void;
 }
 
 export const EditProductModal = ({
@@ -28,7 +29,8 @@ export const EditProductModal = ({
   onFormSubmit,
   isLoading,
   categories,
-  onImagesChange,
+  onImageChange,
+  onImageDelete,
 }: EditProductModalProps) => {
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
@@ -78,20 +80,18 @@ export const EditProductModal = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => {
-        // Aseguramos limpiar las imágenes seleccionadas cuando se cierre el modal
-        onImagesChange([]);
-        onClose();
-      }}
+      onClose={onClose}
       title="Editar Producto"
       size="xl"
     >
       <ProductForm
+        key={productToEdit?.id || 'new'} // Forzar re-render cuando cambia el producto
         form={form as unknown as UseFormReturn<ProductFormData>}
         onSubmit={handleInternalSubmit}
         isLoading={isLoading}
         categories={categories}
-        onImagesChange={onImagesChange}
+        onImageChange={onImageChange}
+        onImageDelete={onImageDelete}
         currentImageUrls={currentImageUrls}
       />
     </Modal>

@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { productSchema, ProductFormData, Product } from '@mi-tienda/types';
-import { createProduct, uploadProductImage } from '@/services/productService';
+import { createProduct, uploadProductImageByIndex } from '@/services/productService';
 import { fetchCategories } from '@/services/categoryService';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
@@ -17,8 +17,9 @@ export default function NuevoProductoPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // --- Estado local para el archivo de imagen ---
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  // --- Estado local para el producto recién creado y las imágenes pendientes ---
+  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
+  const [pendingImages, setPendingImages] = useState<{ file: File; index: number }[]>([]);
 
   // --- Query para categorías ---
   const {
@@ -42,42 +43,49 @@ export default function NuevoProductoPage() {
     },
   });
 
-  // --- Mutación para subir la imagen (Paso 2) ---
-  const uploadImageMutation = useMutation<Product, unknown, { productId: string; imageFile: File }>({
-    mutationFn: ({ productId, imageFile }) => uploadProductImage(productId, imageFile),
+  // --- Mutación para subir una imagen por índice (Paso 2) ---
+  const uploadImageMutation = useMutation<Product, unknown, { productId: string; imageFile: File; index: number }>({
+    mutationFn: ({ productId, imageFile, index }) => uploadProductImageByIndex(productId, imageFile, index),
     onSuccess: (updatedProduct: Product) => {
-      console.log('Producto e imagen subidos:', updatedProduct);
-      alert(`Producto "${updatedProduct.name}" creado e imagen subida con éxito!`);
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      router.push('/productos');
+      console.log(`Imagen ${updatedProduct.name} subida`);
     },
     onError: (error: unknown, variables) => {
       const e = error as Error;
-      console.error(`Error al subir imagen para producto ${variables?.productId}:`, e);
-      alert(`Error: Los datos del producto se guardaron, pero falló la subida de la imagen. ${e.message ?? ''}`);
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      router.push('/productos');
+      console.error(`Error al subir imagen ${variables?.index}:`, e);
     },
   });
 
   // --- Mutación para crear el producto (Paso 1) ---
   const createProductMutation = useMutation<Product, unknown, ProductFormData>({
     mutationFn: createProduct,
-    onSuccess: (createdProduct: Product) => {
+    onSuccess: async (createdProduct: Product) => {
       console.log('Producto creado (datos):', createdProduct);
+      setCreatedProductId(createdProduct.id);
 
-      if (selectedImageFile) {
-        // Si existe imagen, llamar al paso 2
-        uploadImageMutation.mutate({
-          productId: createdProduct.id,
-          imageFile: selectedImageFile,
-        });
+      // Si hay imágenes pendientes, subirlas ahora
+      if (pendingImages.length > 0) {
+        try {
+          // Subir todas las imágenes pendientes
+          await Promise.all(
+            pendingImages.map(({ file, index }) =>
+              uploadImageMutation.mutateAsync({
+                productId: createdProduct.id,
+                imageFile: file,
+                index,
+              })
+            )
+          );
+          alert(`Producto "${createdProduct.name}" creado con imágenes!`);
+        } catch (error) {
+          console.error('Error al subir algunas imágenes:', error);
+          alert(`Producto "${createdProduct.name}" creado, pero algunas imágenes no se subieron.`);
+        }
       } else {
-        // No hay imagen: finalizar directamente
-        alert(`Producto "${createdProduct.name}" creado con éxito (sin imagen).`);
-        queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-        router.push('/productos');
+        alert(`Producto "${createdProduct.name}" creado con éxito!`);
       }
+
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      router.push('/productos');
     },
     onError: (error: unknown) => {
       const e = error as Error;
@@ -90,6 +98,15 @@ export default function NuevoProductoPage() {
   const onSubmit = (data: ProductFormData) => {
     console.log('Datos del formulario validados:', data);
     createProductMutation.mutate(data);
+  };
+
+  // --- Handler para cuando se selecciona una imagen ---
+  const handleImageChange = (file: File, index: number) => {
+    // Agregar imagen a pendientes para subir después de crear el producto
+    setPendingImages((prev) => {
+      const filtered = prev.filter((img) => img.index !== index);
+      return [...filtered, { file, index }];
+    });
   };
 
   const isSubmitting = createProductMutation.status === 'pending' || uploadImageMutation.status === 'pending';
@@ -128,8 +145,8 @@ export default function NuevoProductoPage() {
         onSubmit={onSubmit}
         isLoading={isSubmitting}
         categories={categories || []}
-        onImageChange={setSelectedImageFile}
-        currentImageUrl={null}
+        onImageChange={handleImageChange}
+        currentImageUrls={[]}
       />
     </div>
   );

@@ -119,3 +119,92 @@ export const handleUploadProductImage = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al actualizar la imagen del producto', error });
   }
 };
+
+export const handleUploadProductImages = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+    return res.status(400).json({ message: 'No se subieron archivos de imagen.' });
+  }
+
+  // Limitar a 3 imágenes máximo
+  const files = req.files.slice(0, 3);
+  const imageUrls = files.map((file) => `/uploads/${file.filename}`);
+
+  try {
+    // Actualizar los campos imageUrl, imageUrl2, imageUrl3
+    const updateData: any = {};
+    if (imageUrls[0]) updateData.imageUrl = imageUrls[0];
+    if (imageUrls[1]) updateData.imageUrl2 = imageUrls[1];
+    if (imageUrls[2]) updateData.imageUrl3 = imageUrls[2];
+
+    const updatedProduct = await productService.updateProduct(id, updateData);
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error('Error al guardar URLs de imágenes:', error);
+    res.status(500).json({ message: 'Error al actualizar las imágenes del producto', error });
+  }
+};
+
+export const handleUploadProductImageByIndex = async (req: Request, res: Response) => {
+  const { id, index } = req.params;
+
+  if (!req.file) {
+    return res.status(400).json({ message: 'No se subió ningún archivo de imagen.' });
+  }
+
+  // Validar que el índice sea válido (0, 1, 2)
+  const imageIndex = parseInt(index, 10);
+  if (isNaN(imageIndex) || imageIndex < 0 || imageIndex > 2) {
+    return res.status(400).json({ message: 'Índice de imagen inválido. Debe ser 0, 1 o 2.' });
+  }
+
+  // Construir la URL relativa donde se puede acceder a la imagen
+  const imageUrl = `/uploads/${req.file.filename}`;
+
+  try {
+    // Determinar qué campo actualizar según el índice
+    const updateData: any = {};
+    if (imageIndex === 0) {
+      updateData.imageUrl = imageUrl;
+    } else if (imageIndex === 1) {
+      updateData.imageUrl2 = imageUrl;
+    } else if (imageIndex === 2) {
+      updateData.imageUrl3 = imageUrl;
+    }
+
+    const updatedProduct = await productService.updateProduct(id, updateData);
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error(`Error al guardar URL de imagen ${imageIndex}:`, error);
+    res.status(500).json({ message: `Error al actualizar la imagen ${imageIndex + 1} del producto`, error });
+  }
+};
+
+export const handleDeleteProductImageByIndex = async (req: Request, res: Response) => {
+  const { id, index } = req.params;
+
+  // Validar que el índice sea válido (0, 1, 2)
+  const imageIndex = parseInt(index, 10);
+  if (isNaN(imageIndex) || imageIndex < 0 || imageIndex > 2) {
+    return res.status(400).json({ message: 'Índice de imagen inválido. Debe ser 0, 1 o 2.' });
+  }
+
+  try {
+    // Determinar qué campo poner en null según el índice
+    const updateData: any = {};
+    if (imageIndex === 0) {
+      updateData.imageUrl = null;
+    } else if (imageIndex === 1) {
+      updateData.imageUrl2 = null;
+    } else if (imageIndex === 2) {
+      updateData.imageUrl3 = null;
+    }
+
+    const updatedProduct = await productService.updateProduct(id, updateData);
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.error(`Error al eliminar imagen ${imageIndex}:`, error);
+    res.status(500).json({ message: `Error al eliminar la imagen ${imageIndex + 1} del producto`, error });
+  }
+};
