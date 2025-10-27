@@ -1,32 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useForm, type UseFormReturn, type Resolver } from 'react-hook-form';
+import { useState } from 'react';
+import type { Resolver, UseFormReturn } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { productSchema, ProductFormData, Category } from '@mi-tienda/types';
+import { productSchema, ProductFormData, Product } from '@mi-tienda/types';
 import { createProduct, uploadProductImage } from '@/services/productService';
 import { fetchCategories } from '@/services/categoryService';
-import ProductForm from '@/components/admin/ProductForm';
+import { ProductForm } from '@/components/admin/ProductForm';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NuevoProductoPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  // --- Estado local para el archivo de imagen ---
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
-  // 1. Obtener categorías para el <select>
-  const { data: categories, isLoading: isLoadingCategories, error: errorCategories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
-  });
+  // --- Query para categorías ---
+  const {
+    data: categories,
+    isLoading: isLoadingCategories,
+    error: errorCategories,
+  } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories });
 
-  // 2. Configurar el Formulario con react-hook-form y Zod
+  // --- Formulario ---
   const form = useForm<ProductFormData>({
-    // zodResolver puede provenir de una instalación diferente de react-hook-form; casteamos usando unknown+Resolver para mantener tipado.
-    resolver: zodResolver(productSchema) as unknown as Resolver<ProductFormData>,
+    resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
     defaultValues: {
       name: '',
       slug: '',
@@ -35,64 +38,62 @@ export default function NuevoProductoPage() {
       originalPrice: undefined,
       acquisitionCost: undefined,
       stock: 0,
-      categoryId: undefined,
-      isFeatured: false,
+      categoryId: '',
     },
   });
 
-  // 3. Mutación para subir la imagen (NUEVA)
-  const uploadImageMutation = useMutation({
-    mutationFn: ({ productId, imageFile }: { productId: string; imageFile: File }) =>
-      uploadProductImage(productId, imageFile),
-    onSuccess: (updatedProduct) => {
+  // --- Mutación para subir la imagen (Paso 2) ---
+  const uploadImageMutation = useMutation<Product, unknown, { productId: string; imageFile: File }>({
+    mutationFn: ({ productId, imageFile }) => uploadProductImage(productId, imageFile),
+    onSuccess: (updatedProduct: Product) => {
       console.log('Producto e imagen subidos:', updatedProduct);
       alert(`Producto "${updatedProduct.name}" creado e imagen subida con éxito!`);
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       router.push('/productos');
     },
-    onError: (error, variables) => {
-      console.error(`Error al subir imagen para producto ${variables?.productId}:`, error);
-      alert(
-        `Los datos del producto se guardaron, pero la subida de la imagen falló. ${ (error as { message?: string })?.message ?? '' }`
-      );
+    onError: (error: unknown, variables) => {
+      const e = error as Error;
+      console.error(`Error al subir imagen para producto ${variables?.productId}:`, e);
+      alert(`Error: Los datos del producto se guardaron, pero falló la subida de la imagen. ${e.message ?? ''}`);
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       router.push('/productos');
     },
   });
 
-  // 4. Mutación para crear el producto (MODIFICADA)
-  const createProductMutation = useMutation({
+  // --- Mutación para crear el producto (Paso 1) ---
+  const createProductMutation = useMutation<Product, unknown, ProductFormData>({
     mutationFn: createProduct,
-    onSuccess: (createdProduct) => {
+    onSuccess: (createdProduct: Product) => {
       console.log('Producto creado (datos):', createdProduct);
 
       if (selectedImageFile) {
-        // Si hay imagen, llamamos a la mutación de subida y esperamos
+        // Si existe imagen, llamar al paso 2
         uploadImageMutation.mutate({
           productId: createdProduct.id,
           imageFile: selectedImageFile,
         });
       } else {
-        // Si NO hay imagen, terminamos y redirigimos
+        // No hay imagen: finalizar directamente
         alert(`Producto "${createdProduct.name}" creado con éxito (sin imagen).`);
         queryClient.invalidateQueries({ queryKey: ['admin-products'] });
         router.push('/productos');
       }
     },
     onError: (error: unknown) => {
-      const e = error as { message?: string };
+      const e = error as Error;
       console.error('Error al crear producto (datos):', e);
       alert(e.message ?? 'No se pudo crear el producto');
     },
   });
 
-  // 5. Función de Envío (MODIFICADA)
+  // --- onSubmit del formulario ---
   const onSubmit = (data: ProductFormData) => {
-    // Solo lanzamos la mutación para crear los datos; la subida de imagen se gestionará en onSuccess
+    console.log('Datos del formulario validados:', data);
     createProductMutation.mutate(data);
   };
 
-  // 5. Renderizado de Carga de Categorías
+  const isSubmitting = createProductMutation.status === 'pending' || uploadImageMutation.status === 'pending';
+
   if (isLoadingCategories) {
     return (
       <div className="flex justify-center items-center py-20">
@@ -102,7 +103,6 @@ export default function NuevoProductoPage() {
     );
   }
 
-  // 6. Renderizado de Error de Categorías
   if (errorCategories) {
     return (
       <div className="flex flex-col items-center py-20 text-red-600 bg-red-50 border border-red-200 rounded-lg">
@@ -113,9 +113,6 @@ export default function NuevoProductoPage() {
     );
   }
 
-  // 7. Renderizado del Formulario (Lógica + UI)
-  const isMutating = (createProductMutation.status === 'pending') || (uploadImageMutation.status === 'pending');
-  
   return (
     <div className="space-y-6">
       <div>
@@ -125,13 +122,14 @@ export default function NuevoProductoPage() {
         </Link>
         <h1 className="text-3xl font-bold text-gray-900">Agregar Nuevo Producto</h1>
       </div>
- 
+
       <ProductForm
         form={form as unknown as UseFormReturn<ProductFormData>}
         onSubmit={onSubmit}
-        isLoading={isMutating}
+        isLoading={isSubmitting}
         categories={categories || []}
         onImageChange={setSelectedImageFile}
+        currentImageUrl={null}
       />
     </div>
   );

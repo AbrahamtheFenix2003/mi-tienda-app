@@ -1,7 +1,13 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import mainApiRouter from './api/index.js';
+
+// Obtener __dirname equivalente en ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Inicializar la aplicación de Express
 const app: Application = express();
@@ -13,7 +19,7 @@ app.use(express.urlencoded({ extended: true })); // Parsea URL-encoded bodies
 
 // --- SERVIR ARCHIVOS ESTÁTICOS ---
 // Servir archivos desde la carpeta 'uploads' bajo la ruta '/uploads'
-const uploadsPath = path.resolve(__dirname, '..', '..', 'uploads'); // Asegura ruta correcta en dist
+const uploadsPath = path.resolve(__dirname, '..', 'uploads'); // Va un nivel arriba desde src
 app.use('/uploads', express.static(uploadsPath));
 // ------------------------------------
 

@@ -3,9 +3,15 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Obtener __dirname equivalente en ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Asegurarse de que el directorio 'uploads' exista
-const uploadDir = path.resolve(__dirname, '..', '..', 'uploads'); // Va dos niveles arriba desde dist/config
+const uploadDir = path.resolve(__dirname, '..', '..', 'uploads'); // Va dos niveles arriba desde src/config
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

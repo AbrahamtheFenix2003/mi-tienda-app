@@ -4,7 +4,7 @@
 
 import { Product } from '@mi-tienda/types';
 import { Edit, Trash2, Package } from 'lucide-react';
-import Image from 'next/image'; // Usamos el componente Image de Next.js
+import { getAbsoluteImageUrl } from '@/lib/imageUtils';
 
 interface ProductTableProps {
   products: Product[];
@@ -59,13 +59,11 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
                   
                   {/* Imagen */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex-shrink-0 h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                    <div className="shrink-0 h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
                       {product.imageUrl ? (
-                        <Image
-                          src={product.imageUrl}
+                        <img
+                          src={getAbsoluteImageUrl(product.imageUrl) || '/placeholder.png'}
                           alt={product.name}
-                          width={48}
-                          height={48}
                           className="object-cover h-12 w-12"
                         />
                       ) : (
