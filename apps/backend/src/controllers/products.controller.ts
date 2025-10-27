@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
 import * as productService from '../services/products.service.js';
 import { ProductData } from '../services/products.service.js';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
 import upload from '../config/multer.js';
 import { updateProduct } from '../services/products.service.js';
+
+// Usar Prisma.Decimal en lugar de importar Decimal directamente
+const Decimal = Prisma.Decimal;
 
 // Helper para validar los datos de entrada
 const validateProductData = (data: any): { error?: string } => {

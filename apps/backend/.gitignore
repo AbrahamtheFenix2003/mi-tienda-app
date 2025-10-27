@@ -1,6 +1,16 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.local
+.env.*.local
 
 /uploads
 /generated/prisma
+dist
+build
+*.log
+firebase-debug.log
+.DS_Store
+.vscode
+.idea
+tsconfig.tsbuildinfo
