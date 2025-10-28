@@ -15,7 +15,7 @@ export const getAllSuppliers = async (): Promise<Supplier[]> => {
   });
 };
 
-export const getSupplierById = async (id: string): Promise<Supplier | null> => {
+export const getSupplierById = async (id: number): Promise<Supplier | null> => {
   return prisma.supplier.findUnique({
     where: { id },
   });
@@ -28,7 +28,7 @@ export const createSupplier = async (data: SupplierData): Promise<Supplier> => {
   return supplier;
 };
 
-export const updateSupplier = async (id: string, data: Partial<SupplierData>): Promise<Supplier> => {
+export const updateSupplier = async (id: number, data: Partial<SupplierData>): Promise<Supplier> => {
   const supplier = await prisma.supplier.update({
     where: { id },
     data,
@@ -36,7 +36,7 @@ export const updateSupplier = async (id: string, data: Partial<SupplierData>): P
   return supplier;
 };
 
-export const deleteSupplier = async (id: string): Promise<Supplier> => {
+export const deleteSupplier = async (id: number): Promise<Supplier> => {
   const supplier = await prisma.supplier.delete({
     where: { id },
   });

@@ -11,7 +11,11 @@ export const handleGetAllSuppliers = async (req: Request, res: Response) => {
 };
 
 export const handleGetSupplierById = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de proveedor inválido' });
+  }
 
   try {
     const supplier = await supplierService.getSupplierById(id);
@@ -43,7 +47,12 @@ export const handleCreateSupplier = async (req: Request, res: Response) => {
 };
 
 export const handleUpdateSupplier = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de proveedor inválido' });
+  }
+
   const data = req.body;
 
   try {
@@ -61,7 +70,11 @@ export const handleUpdateSupplier = async (req: Request, res: Response) => {
 };
 
 export const handleDeleteSupplier = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de proveedor inválido' });
+  }
 
   try {
     await supplierService.deleteSupplier(id);

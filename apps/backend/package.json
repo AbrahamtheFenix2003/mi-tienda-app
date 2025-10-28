@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "studio": "npx prisma studio",
-    "migrate:dev": "npx prisma migrate dev"
+    "migrate:dev": "npx prisma migrate dev",
+    "generate": "npx prisma generate"
   },
   "keywords": [],
   "author": "",

@@ -213,7 +213,7 @@ model Expense {
 
 // 7. PROVEEDOR
 model Supplier {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String   @unique
   contact   String?
   phone     String?
@@ -237,7 +237,7 @@ model Purchase {
   totalAmount   Decimal      @db.Decimal(10, 2) // Total pagado al proveedor
   status        PurchaseStatus @default(REGISTRADA)
 
-  supplierId String
+  supplierId Int
   supplier   Supplier @relation(fields: [supplierId], references: [id])
 
   registeredById String
@@ -293,7 +293,7 @@ model StockLot {
   purchaseId String?
   purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull) // Compra que originó el lote
 
-  supplierId String?
+  supplierId Int?
   supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull) // Proveedor del lote
 
   createdAt DateTime @default(now())
