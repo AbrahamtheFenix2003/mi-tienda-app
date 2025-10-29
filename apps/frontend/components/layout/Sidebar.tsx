@@ -13,6 +13,7 @@ import {
   Truck,          // Icono para "Compras"
   Wallet,         // Icono para "Caja"
   Home,           // Icono para "Ver Tienda"
+  FolderOpen,     // Icono para "Categorías"
 } from 'lucide-react';
 import Link from 'next/link'; // Usamos el Link de Next.js
 import { usePathname } from 'next/navigation'; // Hook para saber la ruta activa
@@ -21,6 +22,7 @@ import { usePathname } from 'next/navigation'; // Hook para saber la ruta activa
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/productos', label: 'Productos', icon: Package },
+  { href: '/categorias', label: 'Categorías', icon: FolderOpen },
   { href: '/proveedores', label: 'Proveedores', icon: Building2 },
   { href: '/punto-de-ventas', label: 'Punto de ventas', icon: ShoppingCart },
   { href: '/reportes', label: 'Reportes', icon: BarChart },
