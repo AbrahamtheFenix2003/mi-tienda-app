@@ -5,6 +5,7 @@
 import {
   LayoutDashboard,
   Package,
+  Building2,      // Icono para "Proveedores"
   ShoppingCart, // Icono para "Punto de ventas"
   BarChart,       // Icono para "Reportes"
   Calculator,     // Icono para "Rentabilidad"
@@ -20,6 +21,7 @@ import { usePathname } from 'next/navigation'; // Hook para saber la ruta activa
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/productos', label: 'Productos', icon: Package },
+  { href: '/proveedores', label: 'Proveedores', icon: Building2 },
   { href: '/punto-de-ventas', label: 'Punto de ventas', icon: ShoppingCart },
   { href: '/reportes', label: 'Reportes', icon: BarChart },
   { href: '/rentabilidad', label: 'Analisis de rentabilidad', icon: Calculator },

@@ -105,7 +105,7 @@ model User {
 
 // 2. CATEGORÍA DE PRODUCTO
 model Category {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -139,7 +139,7 @@ model Product {
   stockInicial        Int?
   precioCompraInicial Decimal? @db.Decimal(10, 2)
 
-  categoryId String?
+  categoryId Int?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   // Relaciones inversas
