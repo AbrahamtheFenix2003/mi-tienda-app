@@ -29,7 +29,7 @@ export const createCategory = async (name: string): Promise<Category> => {
  * @param id El ID de la categoría a actualizar.
  * @param name El nuevo nombre para la categoría.
  */
-export const updateCategory = async (id: string, name: string): Promise<Category> => {
+export const updateCategory = async (id: number, name: string): Promise<Category> => {
   return prisma.category.update({
     where: { id },
     data: { name },
@@ -40,7 +40,7 @@ export const updateCategory = async (id: string, name: string): Promise<Category
  * Elimina una categoría.
  * @param id El ID de la categoría a eliminar.
  */
-export const deleteCategory = async (id: string): Promise<Category> => {
+export const deleteCategory = async (id: number): Promise<Category> => {
   return prisma.category.delete({
     where: { id },
   });
@@ -50,7 +50,7 @@ export const deleteCategory = async (id: string): Promise<Category> => {
  * Busca una categoría por su ID.
  * @param id El ID de la categoría a buscar.
  */
-export const getCategoryById = async (id: string): Promise<Category | null> => {
+export const getCategoryById = async (id: number): Promise<Category | null> => {
   return prisma.category.findUnique({
     where: { id },
   });

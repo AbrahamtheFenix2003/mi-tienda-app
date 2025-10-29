@@ -61,6 +61,9 @@ export const handleCreateProduct = async (req: Request, res: Response) => {
     originalPrice: data.originalPrice ? new Decimal(data.originalPrice) : undefined,
     acquisitionCost: data.acquisitionCost ? new Decimal(data.acquisitionCost) : undefined,
     stock: data.stock !== undefined ? parseInt(data.stock, 10) : 0,
+    categoryId: data.categoryId !== undefined && data.categoryId !== null && data.categoryId !== ''
+      ? parseInt(data.categoryId, 10)
+      : undefined,
   };
 
   try {
@@ -94,6 +97,9 @@ export const handleUpdateProduct = async (req: Request, res: Response) => {
   if (data.originalPrice) data.originalPrice = new Decimal(data.originalPrice);
   if (data.acquisitionCost) data.acquisitionCost = new Decimal(data.acquisitionCost);
   if (data.stock) data.stock = parseInt(data.stock, 10);
+  if (data.categoryId !== undefined && data.categoryId !== null && data.categoryId !== '') {
+    data.categoryId = parseInt(data.categoryId, 10);
+  }
 
   try {
     const updatedProduct = await productService.updateProduct(id, data);

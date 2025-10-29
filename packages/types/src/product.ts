@@ -22,7 +22,7 @@ export interface Product {
   tags: string[];
   createdAt: string;
   updatedAt: string;
-  categoryId?: string | null;
+  categoryId?: number | null;
   category?: Category | null;
 }
 
@@ -69,9 +69,10 @@ export const productSchema = z.object({
   categoryId: z.preprocess(
     (val) => {
       if (val === null || val === undefined || String(val).trim() === '') return null;
-      return val;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
     },
-    z.string().optional().nullable()
+    z.number().int().optional().nullable()
   ),
   
   imageUrl: z.preprocess(

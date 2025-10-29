@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma.js';
 import { Prisma } from '@prisma/client';
-import { Product, Category } from '@mi-tienda/types';
+import { Category } from '@mi-tienda/types';
+import { Product } from '@mi-tienda/types';
 
 // Tipo para los datos de entrada al crear/actualizar un producto
 // Nota: code es obligatorio en DB pero se auto-genera en createProduct
@@ -19,7 +20,7 @@ export type ProductData = {
   imageUrl4?: string;
   isFeatured?: boolean;
   tags?: string[];
-  categoryId?: string;
+  categoryId?: number;
 };
 
 type PrismaProductWithCategory = Prisma.ProductGetPayload<{

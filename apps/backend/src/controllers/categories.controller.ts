@@ -25,8 +25,12 @@ export const handleCreateCategory = async (req: Request, res: Response) => {
 };
 
 export const handleUpdateCategory = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
   const { name } = req.body;
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de categoría inválido' });
+  }
 
   if (!name) {
     return res.status(400).json({ message: 'El nombre es requerido' });
@@ -41,7 +45,11 @@ export const handleUpdateCategory = async (req: Request, res: Response) => {
 };
 
 export const handleDeleteCategory = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de categoría inválido' });
+  }
 
   try {
     await categoryService.deleteCategory(id);
@@ -52,7 +60,11 @@ export const handleDeleteCategory = async (req: Request, res: Response) => {
 };
 
 export const handleGetCategoryById = async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de categoría inválido' });
+  }
 
   try {
     const category = await categoryService.getCategoryById(id);

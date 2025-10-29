@@ -1,8 +1,8 @@
 // packages/types/src/category.ts
 
 export interface Category {
-  id: string;
+  id: number;
   name: string;
-  createdAt: string; 
+  createdAt: string;
   updatedAt: string;
 }
