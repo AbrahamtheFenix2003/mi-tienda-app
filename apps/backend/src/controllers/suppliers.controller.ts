@@ -86,3 +86,21 @@ export const handleDeleteSupplier = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al eliminar proveedor', error });
   }
 };
+
+export const handleRestoreSupplier = async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id, 10);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ message: 'ID de proveedor inválido' });
+  }
+
+  try {
+    const supplier = await supplierService.restoreSupplier(id);
+    res.status(200).json(supplier);
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Proveedor no encontrado' });
+    }
+    res.status(500).json({ message: 'Error al reactivar proveedor', error });
+  }
+};

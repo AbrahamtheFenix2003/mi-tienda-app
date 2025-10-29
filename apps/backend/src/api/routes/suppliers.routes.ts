@@ -16,4 +16,7 @@ router.post('/', supplierController.handleCreateSupplier);
 router.put('/:id', supplierController.handleUpdateSupplier);
 router.delete('/:id', supplierController.handleDeleteSupplier);
 
+// POST /api/v1/suppliers/:id/restore (Opcional: para reactivar proveedores)
+router.post('/:id/restore', supplierController.handleRestoreSupplier);
+
 export default router;

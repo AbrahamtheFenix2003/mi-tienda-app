@@ -9,6 +9,7 @@ export interface Supplier {
   phone?: string | null;
   email?: string | null;
   address?: string | null;
+  isActive: boolean;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
 }
