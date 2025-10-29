@@ -1,7 +1,7 @@
 // packages/types/src/product.ts
 
 import { z } from 'zod';
-import { Category } from './category'; // Importa desde este mismo paquete
+import { Category } from './category.js'; // Importa desde este mismo paquete
 
 export interface Product {
   id: number;

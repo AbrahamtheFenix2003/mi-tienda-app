@@ -1,7 +1,24 @@
 {
   "name": "@mi-tienda/types",
   "version": "1.0.0",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "private": true
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev:watch": "tsc -w -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
+  }
 }
