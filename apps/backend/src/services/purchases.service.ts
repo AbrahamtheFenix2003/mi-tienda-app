@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma.js';
-import { Prisma, StockMovementType, StockMovementSubType, LotStatus } from '@prisma/client';
+import { Prisma, StockMovementType, StockMovementSubType, LotStatus, PurchaseStatus } from '@prisma/client';
 import type { Purchase, PurchaseItem, Supplier, Product, PurchaseFormData } from '@mi-tienda/types';
 
 // Tipo para los datos de entrada al crear una compra (sin incluir campos calculados)
@@ -261,5 +261,98 @@ export const createPurchase = async (data: PurchaseFormData, userId: string): Pr
   }); // Fin de la transacción
 
   // Mapear el resultado final al tipo esperado por el frontend
+  return mapPurchase(result);
+};
+
+/**
+ * Anula una compra y revierte todos los movimientos de inventario asociados
+ * usando una transacción para asegurar consistencia de datos.
+ */
+export const annulPurchase = async (purchaseId: string, userId: string): Promise<Purchase> => {
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Obtener la compra y sus lotes asociados
+    const purchase = await tx.purchase.findUnique({
+      where: { id: purchaseId },
+      include: { 
+        supplier: true,
+        items: { 
+          include: { product: true } 
+        },
+        stockLots: true // Traer los lotes generados por esta compra
+      },
+    });
+
+    if (!purchase) {
+      throw new Error("Compra no encontrada.");
+    }
+    
+    if (purchase.status === PurchaseStatus.ANULADA) {
+      throw new Error("Esta compra ya ha sido anulada.");
+    }
+
+    // 2. Iterar sobre los lotes generados por esta compra
+    for (const lot of purchase.stockLots) {
+      // 3. VALIDACIÓN CRÍTICA: Solo permitimos anular si el stock del lote no ha sido tocado
+      // (cantidad actual == original)
+      if (lot.quantity !== lot.originalQuantity) {
+        throw new Error(
+          `No se puede anular: El lote ${lot.loteId} ya fue utilizado en ventas (Quedan ${lot.quantity}/${lot.originalQuantity}).`
+        );
+      }
+      
+      // 4. Revertir el stock del Producto
+      await tx.product.update({
+        where: { id: lot.productId },
+        data: {
+          stock: {
+            decrement: lot.originalQuantity, // Restamos lo que sumamos
+          },
+        },
+      });
+      
+      // 5. Crear el movimiento de stock de anulación (Salida)
+      await tx.stockMovement.create({
+        data: {
+          productId: lot.productId,
+          loteId: lot.id,
+          quantity: -lot.originalQuantity, // Cantidad negativa (SALIDA)
+          type: StockMovementType.SALIDA,
+          subType: StockMovementSubType.ANULACION_VENTA, // Usar ANULACION_VENTA existente
+          costPerUnit: lot.costPerUnit,
+          totalCost: lot.costPerUnit.mul(lot.originalQuantity).negated(), // Costo negativo
+          referenceId: purchase.id,
+          date: new Date(),
+          userId: userId,
+        },
+      });
+
+      // 6. Actualizar el lote a ELIMINADO
+      await tx.stockLot.update({
+        where: { id: lot.id },
+        data: {
+          quantity: 0,
+          status: LotStatus.ELIMINADO,
+        },
+      });
+    }
+
+    // 7. Finalmente, anular la Compra
+    const anulatedPurchase = await tx.purchase.update({
+      where: { id: purchaseId },
+      data: {
+        status: PurchaseStatus.ANULADA,
+      },
+      include: {
+        supplier: true,
+        items: { 
+          include: { product: true } 
+        },
+      },
+    });
+
+    return anulatedPurchase;
+  }); // Fin de la transacción
+
+  // 8. Mapear y devolver
   return mapPurchase(result);
 };

@@ -16,6 +16,8 @@ router.get('/:id', purchaseController.handleGetPurchaseById);
 // POST endpoint - Crear nueva compra
 router.post('/', purchaseController.handleCreatePurchase);
 
+// PUT /:id/annul - Anular compra
+router.put('/:id/annul', purchaseController.handleAnnulPurchase);
 // Placeholders para operaciones futuras
 // PUT /:id (Actualizar compra)
 // router.put('/:id', purchaseController.handleUpdatePurchase);

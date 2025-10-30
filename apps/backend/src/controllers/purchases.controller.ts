@@ -58,6 +58,36 @@ export const handleCreatePurchase = async (req: AuthRequest, res: Response) => {
 //   // TODO: Implementar actualización de compra
 // };
 
+export const handleAnnulPurchase = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ message: 'ID de compra inválido' });
+  }
+
+  if (!userId) {
+    return res.status(401).json({ message: "Usuario no autenticado." });
+  }
+
+  try {
+    const annulledPurchase = await purchasesService.annulPurchase(id, userId);
+    res.status(200).json(annulledPurchase);
+  } catch (error: any) {
+    console.error("Error al anular la compra:", error);
+    
+    // Capturar el error de negocio específico
+    if (error.message.includes("ya fue utilizado")) {
+      return res.status(409).json({ message: error.message }); // 409 Conflict
+    }
+    if (error.message.includes("no encontrada") || error.message.includes("ya ha sido anulada")) {
+      return res.status(404).json({ message: error.message });
+    }
+    
+    res.status(500).json({ message: 'Error interno al anular la compra', error: error.message });
+  }
+};
+
 // export const handleDeletePurchase = async (req: Request, res: Response) => {
 //   // TODO: Implementar eliminación de compra
 // };
