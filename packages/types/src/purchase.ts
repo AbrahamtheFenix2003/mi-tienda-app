@@ -72,7 +72,6 @@ export const purchaseItemSchema = z.object({
 export const purchaseSchema = z.object({
   purchaseDate: z.coerce.date(),
   supplierId: z.number().int().positive({ message: "Debe seleccionar un proveedor." }),
-  invoiceNumber: z.string().optional().nullable(),
   paymentMethod: z.enum(["YAPE", "PLIN", "EFECTIVO", "TRANSFERENCIA", "CHEQUE", "CREDITO"]).optional().nullable(),
   notes: z.string().optional().nullable(),
   items: z.array(purchaseItemSchema).min(1, { message: "Debe agregar al menos un producto a la compra." })

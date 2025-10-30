@@ -126,6 +126,26 @@ export const getPurchaseById = async (id: string): Promise<Purchase | null> => {
 };
 
 /**
+ * Genera un número de factura automático basado en el año y contador secuencial
+ */
+const generateInvoiceNumber = async (tx: Prisma.TransactionClient): Promise<string> => {
+  const currentYear = new Date().getFullYear();
+  
+  // Contar compras del año actual
+  const purchasesCount = await tx.purchase.count({
+    where: {
+      purchaseDate: {
+        gte: new Date(currentYear, 0, 1), // 1 de enero del año actual
+        lte: new Date(currentYear, 11, 31, 23, 59, 59), // 31 de diciembre del año actual
+      }
+    }
+  });
+  
+  const nextNumber = (purchasesCount + 1).toString().padStart(3, '0');
+  return `F001-${currentYear}-${nextNumber}`;
+};
+
+/**
  * Crea una nueva compra completa incluyendo PurchaseItems, StockLots y StockMovements
  * usando una transacción para asegurar consistencia de datos.
  */
@@ -153,12 +173,15 @@ export const createPurchase = async (data: PurchaseFormData, userId: string): Pr
 
   // Ejecutar todo dentro de una transacción
   const result = await prisma.$transaction(async (tx) => {
+    // Generar invoiceNumber automático
+    const invoiceNumber = await generateInvoiceNumber(tx);
+    
     // a. Crear la Compra principal
     const newPurchase = await tx.purchase.create({
       data: {
         purchaseDate: data.purchaseDate,
         supplierId: data.supplierId,
-        invoiceNumber: data.invoiceNumber,
+        invoiceNumber: invoiceNumber, // Usar el número generado automáticamente
         paymentMethod: data.paymentMethod,
         notes: data.notes,
         totalAmount: totalAmount,
