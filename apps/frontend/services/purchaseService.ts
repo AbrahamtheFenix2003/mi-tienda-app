@@ -31,3 +31,19 @@ export const createPurchase = async (data: PurchaseFormData): Promise<Purchase> 
     throw error;
   }
 };
+
+/**
+ * Anula una compra existente (actualiza estado y revierte stock en backend).
+ * @param id - El ID (string CUID) de la compra a anular.
+ * @returns Una promesa que resuelve a la compra actualizada.
+ */
+export const annulPurchase = async (id: string): Promise<Purchase> => {
+  try {
+    // El token se adjunta automáticamente
+    const response = await api.put<Purchase>(`/purchases/${id}/annul`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error annulling purchase ${id}:`, error);
+    throw error; // Relanzar para que react-query pueda manejarlo
+  }
+};

@@ -2,9 +2,9 @@
 
 'use client';
 
-import React from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchPurchases } from '../../../services/purchaseService';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { fetchPurchases, annulPurchase } from '../../../services/purchaseService';
 import { Purchase } from '@mi-tienda/types';
 import {
   Loader2,
@@ -14,9 +14,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { PurchaseTable } from '../../../components/admin/PurchaseTable';
+import { AnnulPurchaseModal } from '../../../components/admin/AnnulPurchaseModal';
 
 const ComprasPage: React.FC = () => {
   const queryClient = useQueryClient();
+
+  // Estados para el modal de anulación
+  const [isAnnulModalOpen, setIsAnnulModalOpen] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
 
   // Obtener datos de compras
   const { data: purchases, isLoading, error } = useQuery<Purchase[]>({
@@ -24,15 +29,44 @@ const ComprasPage: React.FC = () => {
     queryFn: fetchPurchases,
   });
 
+  // Mutación para anular compras
+  const annulMutation = useMutation({
+    mutationFn: annulPurchase,
+    onSuccess: () => {
+      alert('Compra anulada correctamente.');
+      queryClient.invalidateQueries({ queryKey: ['admin-purchases'] });
+      handleCloseAnnulModal();
+    },
+    onError: (error: unknown) => {
+      console.error('Error al anular:', error);
+      // Mostrar el error de negocio del backend (ej: "lote ya utilizado")
+      const errorWithResponse = error as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = errorWithResponse.response?.data?.message || errorWithResponse.message || 'Error al anular la compra.';
+      alert(errorMessage);
+    },
+  });
+
+  // Handlers para el modal de anulación
+  const handleOpenAnnulModal = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    setIsAnnulModalOpen(true);
+  };
+
+  const handleCloseAnnulModal = () => {
+    setSelectedPurchase(null);
+    setIsAnnulModalOpen(false);
+  };
+
+  const handleConfirmAnnul = () => {
+    if (selectedPurchase) {
+      annulMutation.mutate(selectedPurchase.id);
+    }
+  };
+
   // Funciones de manejo para las acciones de la tabla
   const handleViewDetails = (purchase: Purchase) => {
     console.log('Ver detalles de compra:', purchase);
     // TODO: Implementar modal o página de detalles
-  };
-
-  const handleAnnul = (purchase: Purchase) => {
-    console.log('Anular compra:', purchase);
-    // TODO: Implementar lógica de anulación
   };
 
   // Función para renderizar el contenido principal
@@ -63,7 +97,7 @@ const ComprasPage: React.FC = () => {
           <PurchaseTable
             purchases={purchases}
             onViewDetails={handleViewDetails}
-            onAnnul={handleAnnul}
+            onAnnul={handleOpenAnnulModal}
           />
         </div>
       );
@@ -114,6 +148,15 @@ const ComprasPage: React.FC = () => {
 
       {/* Contenido principal */}
       {renderContent()}
+
+      {/* Modal de anulación de compra */}
+      <AnnulPurchaseModal
+        isOpen={isAnnulModalOpen}
+        onClose={handleCloseAnnulModal}
+        onConfirm={handleConfirmAnnul}
+        isLoading={annulMutation.isPending}
+        purchaseIdentifier={selectedPurchase?.invoiceNumber || selectedPurchase?.id}
+      />
     </div>
   );
 };
