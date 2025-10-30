@@ -53,10 +53,42 @@ export const handleCreatePurchase = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Placeholders para métodos futuros (PUT, DELETE)
-// export const handleUpdatePurchase = async (req: Request, res: Response) => {
-//   // TODO: Implementar actualización de compra
-// };
+export const handleUpdatePurchase = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ message: 'ID de compra inválido' });
+  }
+
+  // Validar datos de entrada con Zod
+  const validationResult = purchaseSchema.safeParse(req.body);
+  if (!validationResult.success) {
+    return res.status(400).json({ message: "Datos inválidos", errors: validationResult.error.issues });
+  }
+
+  // Obtener ID del usuario autenticado
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ message: "Usuario no autenticado." });
+  }
+
+  try {
+    const updatedPurchase = await purchasesService.updatePurchase(id, validationResult.data, userId);
+    res.status(200).json(updatedPurchase);
+  } catch (error: any) {
+    console.error("Error al actualizar la compra:", error);
+
+    // Capturar errores de negocio específicos
+    if (error.message.includes("utilizado") || error.message.includes("reducir") || error.message.includes("eliminar")) {
+      return res.status(409).json({ message: error.message }); // 409 Conflict
+    }
+    if (error.message.includes("anulada") || error.message.includes("no encontr")) {
+      return res.status(404).json({ message: error.message });
+    }
+
+    res.status(500).json({ message: 'Error interno al actualizar la compra', error: error.message });
+  }
+};
 
 export const handleAnnulPurchase = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;

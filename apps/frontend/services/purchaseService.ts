@@ -47,3 +47,19 @@ export const annulPurchase = async (id: string): Promise<Purchase> => {
     throw error; // Relanzar para que react-query pueda manejarlo
   }
 };
+
+/**
+ * Actualiza una compra existente con validación de inventario (Backend Tarea 22).
+ * @param id - El ID (string CUID) de la compra a actualizar.
+ * @param data - Los nuevos datos del formulario de compra.
+ * @returns Una promesa que resuelve a la compra actualizada.
+ */
+export const updatePurchase = async (id: string, data: PurchaseFormData): Promise<Purchase> => {
+  try {
+    const response = await api.put<Purchase>(`/purchases/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating purchase ${id}:`, error);
+    throw error; // Relanzar para TanStack Query
+  }
+};

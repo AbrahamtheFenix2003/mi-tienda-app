@@ -265,6 +265,273 @@ export const createPurchase = async (data: PurchaseFormData, userId: string): Pr
 };
 
 /**
+ * Actualiza una compra existente y ajusta inteligentemente los lotes y movimientos de inventario
+ * basándose en la diferencia entre items antiguos y nuevos.
+ */
+export const updatePurchase = async (purchaseId: string, data: PurchaseFormData, userId: string): Promise<Purchase> => {
+  return await prisma.$transaction(async (tx) => {
+    // PASO A: Calcular nuevo total y cargar datos antiguos
+    const purchaseItemsData: {
+      productId: number;
+      quantity: number;
+      purchasePrice: Prisma.Decimal;
+      loteId?: string | null;
+      fechaVencimiento?: Date | null;
+    }[] = data.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      purchasePrice: new Prisma.Decimal(item.purchasePrice),
+      loteId: item.loteId,
+      fechaVencimiento: item.fechaVencimiento ?? null,
+    }));
+
+    const newTotalAmount = purchaseItemsData.reduce<Prisma.Decimal>(
+      (sum, item) => sum.add(item.purchasePrice.mul(item.quantity)),
+      new Prisma.Decimal(0)
+    );
+
+    // Obtener la compra antigua con sus items y lotes
+    const oldPurchase = await tx.purchase.findUniqueOrThrow({
+      where: { id: purchaseId },
+      include: {
+        items: true,
+        stockLots: true
+      },
+    });
+
+    // Validar que no esté anulada
+    if (oldPurchase.status === PurchaseStatus.ANULADA) {
+      throw new Error("No se puede editar una compra anulada.");
+    }
+
+    // Crear Maps para acceso rápido
+    const newItemsMap = new Map(data.items.map(item => [item.productId, item]));
+    const oldItemsMap = new Map(oldPurchase.items.map(item => [item.productId, item]));
+
+    // PASO B: Procesar items existentes (Actualizar y Eliminar)
+    for (const oldItem of oldPurchase.items) {
+      // Buscar el lote correspondiente
+      const matchingLot = oldPurchase.stockLots.find(
+        lot => lot.productId === oldItem.productId && lot.purchaseId === oldPurchase.id
+      );
+
+      if (!matchingLot) {
+        throw new Error(`No se encontró el lote para el producto ${oldItem.productId}`);
+      }
+
+      // Calcular unidades ya vendidas
+      const unitsSold = matchingLot.originalQuantity - matchingLot.quantity;
+
+      // Buscar si este item existe en los nuevos datos
+      const newItemData = newItemsMap.get(oldItem.productId);
+
+      if (newItemData) {
+        // CASO 1: Item existe - ACTUALIZAR
+        const newQuantity = newItemData.quantity;
+        const newPrice = new Prisma.Decimal(newItemData.purchasePrice);
+
+        // Validación crítica: No se puede reducir cantidad por debajo de lo ya vendido
+        if (newQuantity < unitsSold) {
+          throw new Error(
+            `No se puede reducir la cantidad a ${newQuantity}. Ya se han vendido ${unitsSold} unidades del producto ${oldItem.productId}.`
+          );
+        }
+
+        // Calcular diferencia
+        const diff = newQuantity - oldItem.quantity;
+
+        if (diff !== 0) {
+          // Actualizar StockLot
+          await tx.stockLot.update({
+            where: { id: matchingLot.id },
+            data: {
+              quantity: {
+                [diff > 0 ? 'increment' : 'decrement']: Math.abs(diff)
+              },
+              originalQuantity: newQuantity,
+              costPerUnit: newPrice,
+              expiryDate: newItemData.fechaVencimiento ?? null,
+            },
+          });
+
+          // Actualizar Product.stock
+          await tx.product.update({
+            where: { id: oldItem.productId },
+            data: {
+              stock: {
+                [diff > 0 ? 'increment' : 'decrement']: Math.abs(diff)
+              }
+            },
+          });
+
+          // Crear StockMovement de ajuste
+          await tx.stockMovement.create({
+            data: {
+              productId: oldItem.productId,
+              loteId: matchingLot.id,
+              quantity: diff,
+              type: diff > 0 ? StockMovementType.ENTRADA : StockMovementType.SALIDA,
+              subType: StockMovementSubType.AJUSTE_COMPRA_EDITADA,
+              costPerUnit: newPrice,
+              totalCost: newPrice.mul(Math.abs(diff)).mul(diff > 0 ? 1 : -1),
+              referenceId: purchaseId,
+              date: new Date(),
+              userId: userId,
+            },
+          });
+        }
+
+        // Actualizar el PurchaseItem (siempre, por si cambió el precio o fecha aunque no la cantidad)
+        await tx.purchaseItem.update({
+          where: { id: oldItem.id },
+          data: {
+            quantity: newQuantity,
+            purchasePrice: newPrice,
+            fechaVencimiento: newItemData.fechaVencimiento ?? null,
+          },
+        });
+
+      } else {
+        // CASO 2: Item no existe en nuevos datos - ELIMINAR
+        // Validación crítica: No se puede eliminar si ya se vendió algo
+        if (unitsSold > 0) {
+          throw new Error(
+            `No se puede eliminar el producto ${oldItem.productId}. Ya se han vendido ${unitsSold} unidades.`
+          );
+        }
+
+        // Revertir stock del producto
+        await tx.product.update({
+          where: { id: oldItem.productId },
+          data: {
+            stock: {
+              decrement: oldItem.quantity
+            }
+          },
+        });
+
+        // Crear StockMovement de ajuste negativo
+        await tx.stockMovement.create({
+          data: {
+            productId: oldItem.productId,
+            loteId: matchingLot.id,
+            quantity: -oldItem.quantity,
+            type: StockMovementType.SALIDA,
+            subType: StockMovementSubType.AJUSTE_COMPRA_EDITADA,
+            costPerUnit: oldItem.purchasePrice,
+            totalCost: oldItem.purchasePrice.mul(oldItem.quantity).negated(),
+            referenceId: purchaseId,
+            date: new Date(),
+            userId: userId,
+          },
+        });
+
+        // Eliminar el lote
+        await tx.stockLot.delete({
+          where: { id: matchingLot.id }
+        });
+
+        // Eliminar el item
+        await tx.purchaseItem.delete({
+          where: { id: oldItem.id }
+        });
+      }
+    }
+
+    // PASO C: Procesar items nuevos (Crear)
+    for (const newItemData of data.items) {
+      // CASO 3: Item es nuevo (no estaba en la compra original)
+      if (!oldItemsMap.has(newItemData.productId)) {
+        const newPrice = new Prisma.Decimal(newItemData.purchasePrice);
+
+        // Crear el PurchaseItem
+        const newPurchaseItem = await tx.purchaseItem.create({
+          data: {
+            purchaseId: purchaseId,
+            productId: newItemData.productId,
+            quantity: newItemData.quantity,
+            purchasePrice: newPrice,
+            loteId: newItemData.loteId,
+            fechaVencimiento: newItemData.fechaVencimiento ?? null,
+          },
+        });
+
+        // Crear el StockLot
+        const loteIdentifier = `LOTE-${purchaseId}-${newPurchaseItem.id}`;
+        const newLot = await tx.stockLot.create({
+          data: {
+            loteId: loteIdentifier,
+            productId: newItemData.productId,
+            quantity: newItemData.quantity,
+            originalQuantity: newItemData.quantity,
+            costPerUnit: newPrice,
+            entryDate: oldPurchase.purchaseDate, // Usar fecha de compra original
+            expiryDate: newItemData.fechaVencimiento ?? null,
+            status: LotStatus.ACTIVO,
+            purchaseId: purchaseId,
+            supplierId: oldPurchase.supplierId,
+          },
+        });
+
+        // Crear el StockMovement
+        await tx.stockMovement.create({
+          data: {
+            productId: newItemData.productId,
+            loteId: newLot.id,
+            quantity: newItemData.quantity,
+            type: StockMovementType.ENTRADA,
+            subType: StockMovementSubType.COMPRA,
+            costPerUnit: newPrice,
+            totalCost: newPrice.mul(newItemData.quantity),
+            referenceId: purchaseId,
+            date: oldPurchase.purchaseDate,
+            userId: userId,
+          },
+        });
+
+        // Incrementar stock del producto
+        await tx.product.update({
+          where: { id: newItemData.productId },
+          data: {
+            stock: {
+              increment: newItemData.quantity
+            }
+          },
+        });
+      }
+    }
+
+    // PASO D: Actualizar la compra principal
+    await tx.purchase.update({
+      where: { id: purchaseId },
+      data: {
+        purchaseDate: data.purchaseDate,
+        supplierId: data.supplierId,
+        paymentMethod: data.paymentMethod,
+        notes: data.notes,
+        totalAmount: newTotalAmount,
+        status: PurchaseStatus.REGISTRADA,
+      },
+    });
+
+    // PASO E: Devolver resultado completo
+    const fullPurchase = await tx.purchase.findUniqueOrThrow({
+      where: { id: purchaseId },
+      include: {
+        supplier: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    return fullPurchase;
+  }).then(mapPurchase); // Mapear el resultado final
+};
+
+/**
  * Anula una compra y revierte todos los movimientos de inventario asociados
  * usando una transacción para asegurar consistencia de datos.
  */

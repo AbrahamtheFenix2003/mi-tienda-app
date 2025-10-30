@@ -4,7 +4,8 @@
 
 import React from 'react';
 import { Purchase } from '@mi-tienda/types';
-import { Eye, FileX } from 'lucide-react';
+import { Eye, FileX, Edit } from 'lucide-react';
+import Link from 'next/link';
 
 interface PurchaseTableProps {
   purchases: Purchase[];
@@ -139,6 +140,13 @@ export const PurchaseTable = ({ purchases, onViewDetails, onAnnul }: PurchaseTab
                   >
                     <Eye className="h-4 w-4" />
                   </button>
+                  <Link
+                    href={`/compras/editar/${purchase.id}`}
+                    className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full transition-colors inline-flex"
+                    title="Editar Compra"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Link>
                   <button
                     onClick={() => onAnnul(purchase)}
                     className="p-2 text-red-600 hover:text-red-900 hover:bg-red-100 rounded-full transition-colors"
