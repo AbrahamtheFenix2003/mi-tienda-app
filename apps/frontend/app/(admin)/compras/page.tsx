@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 import { PurchaseTable } from '../../../components/admin/PurchaseTable';
 import { AnnulPurchaseModal } from '../../../components/admin/AnnulPurchaseModal';
+import { PurchaseDetailsModal } from '../../../components/admin/PurchaseDetailsModal';
 
 const ComprasPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -22,6 +23,9 @@ const ComprasPage: React.FC = () => {
   // Estados para el modal de anulación
   const [isAnnulModalOpen, setIsAnnulModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+
+  // Estados para el modal de detalles
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Obtener datos de compras
   const { data: purchases, isLoading, error } = useQuery<Purchase[]>({
@@ -63,10 +67,14 @@ const ComprasPage: React.FC = () => {
     }
   };
 
-  // Funciones de manejo para las acciones de la tabla
+  // Handlers para el modal de detalles
   const handleViewDetails = (purchase: Purchase) => {
-    console.log('Ver detalles de compra:', purchase);
-    // TODO: Implementar modal o página de detalles
+    setSelectedPurchase(purchase);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
   };
 
   // Función para renderizar el contenido principal
@@ -156,6 +164,13 @@ const ComprasPage: React.FC = () => {
         onConfirm={handleConfirmAnnul}
         isLoading={annulMutation.isPending}
         purchaseIdentifier={selectedPurchase?.invoiceNumber || selectedPurchase?.id}
+      />
+
+      {/* Modal de detalles de compra */}
+      <PurchaseDetailsModal
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        purchase={selectedPurchase}
       />
     </div>
   );

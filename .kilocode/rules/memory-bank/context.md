@@ -9,6 +9,7 @@ El foco actual del desarrollo es estabilizar y expandir el módulo de **Compras 
 -   **Creación de Compras**: Se implementó el endpoint `POST /api/v1/purchases` que, de forma transaccional, crea la compra, genera lotes de stock y registra los movimientos de inventario correspondientes.
 -   **Validación Zod**: Se integró `zod` en el backend y frontend para validar los formularios de creación de compras, asegurando la integridad de los datos.
 -   **Interfaz de Compras**: Se desarrolló la interfaz en `apps/frontend` para listar y crear nuevas compras, incluyendo búsqueda de productos y un carrito de compras.
+-   **Modal de Detalles de Compra**: Se implementó un modal de solo lectura (`PurchaseDetailsModal`) que muestra información completa de una compra, incluyendo datos generales (proveedor, fecha, factura, método de pago, estado) y tabla detallada de productos con cantidades, costos unitarios y subtotales.
 
 ## Próximos Pasos
 
