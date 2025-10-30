@@ -24,7 +24,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
   error,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showList, setShowList] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Filtrar productos basado en el término de búsqueda
@@ -33,30 +33,28 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
     product.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Mostrar lista cuando hay término de búsqueda
-  useEffect(() => {
-    setShowList(searchTerm.length > 0);
-  }, [searchTerm]);
+  // Mostrar dropdown solo cuando el input está enfocado, hay término de búsqueda y no hay producto seleccionado
+  const showList = isFocused && !selectedProduct && searchTerm.length > 0;
 
   // Manejar selección de producto
   const handleSelect = (product: Product) => {
     onSelectProduct(product);
-    setSearchTerm(product.name);
-    setShowList(false);
+    setSearchTerm('');
+    setIsFocused(false);
   };
 
   // Limpiar selección
   const handleClear = () => {
     onSelectProduct(null);
     setSearchTerm('');
-    setShowList(false);
+    setIsFocused(false);
   };
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowList(false);
+        setIsFocused(false);
       }
     };
 
@@ -78,9 +76,16 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
           <input
             id="product-search"
             type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onFocus={() => setShowList(true)}
+            value={selectedProduct ? selectedProduct.name : searchTerm}
+            onChange={(e) => {
+              // Si ya había un producto seleccionado, deseleccionarlo cuando el usuario
+              // empiece a escribir para permitir una nueva búsqueda.
+              if (selectedProduct) {
+                onSelectProduct(null);
+              }
+              setSearchTerm(e.target.value);
+            }}
+            onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
             className={`block w-full rounded-md border ${
               error ? 'border-red-500' : 'border-gray-300'
@@ -92,14 +97,14 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
             <Search className="h-5 w-5 text-gray-400" />
           </div>
           
-          {/* Botón para limpiar */}
-          {searchTerm && (
+          {/* Botón para limpiar (también permite deseleccionar el producto seleccionado antes de añadirlo) */}
+          {(searchTerm || selectedProduct) && (
             <button
               type="button"
               onClick={handleClear}
               className="absolute inset-y-0 right-0 pr-3 flex items-center"
             >
-              <span className="text-gray-400 hover:text-gray-600">×</span>
+              <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
             </button>
           )}
         </div>
