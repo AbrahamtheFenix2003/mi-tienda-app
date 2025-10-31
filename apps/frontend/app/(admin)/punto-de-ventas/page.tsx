@@ -8,13 +8,15 @@ import { fetchSales, annulSale } from '@/services/salesService';
 import { Sale } from '@mi-tienda/types';
 import { SalesTable } from '@/components/admin/SalesTable';
 import { AnnulSaleModal } from '@/components/admin/AnnulSaleModal';
+import { SaleDetailsModal } from '@/components/admin/SaleDetailsModal';
 
 function PuntoDeVentaPage() {
   // Obtener el cliente de Query
   const queryClient = useQueryClient();
 
-  // Estados para el modal de anulación
+  // Estados para los modales
   const [isAnnulModalOpen, setIsAnnulModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
   // Obtener las ventas usando useQuery
@@ -47,8 +49,8 @@ function PuntoDeVentaPage() {
 
   // Funciones para las acciones
   const handleViewDetails = (sale: Sale) => {
-    console.log('Ver detalles de venta:', sale.id);
-    // Aquí se implementará la lógica para ver detalles
+    setSelectedSale(sale);
+    setIsViewModalOpen(true);
   };
 
   const handleAnnul = (sale: Sale) => {
@@ -56,10 +58,18 @@ function PuntoDeVentaPage() {
     setIsAnnulModalOpen(true);
   };
 
-  // Handlers para el modal de anulación
+  // Handlers para el modal de visualización
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    // No limpiamos selectedSale aquí, por si el usuario quiere anular
+    // después de ver. Lo limpiamos en handleCloseAnnulModal.
+  };
+
+  // Actualiza el handler de cerrar anulación para que también cierre este modal
   const handleCloseAnnulModal = () => {
     setSelectedSale(null);
     setIsAnnulModalOpen(false);
+    setIsViewModalOpen(false); // Cierra ambos por si acaso
   };
 
   const handleConfirmAnnul = () => {
@@ -148,6 +158,13 @@ function PuntoDeVentaPage() {
         onConfirm={handleConfirmAnnul}
         isLoading={annulMutation.isPending}
         saleIdentifier={selectedSale?.customerName || selectedSale?.id}
+      />
+
+      {/* Modal de detalles de venta */}
+      <SaleDetailsModal
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        sale={selectedSale}
       />
     </div>
   );
