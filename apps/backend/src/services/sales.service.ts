@@ -2,7 +2,7 @@
 
 import prisma from '../utils/prisma.js';
 import { Sale, SaleItem, SaleFormData } from '@mi-tienda/types';
-import { Prisma, StockMovementType, StockMovementSubType, CashMovementType } from '@prisma/client';
+import { Prisma, StockMovementType, StockMovementSubType, CashMovementType, OrderStatus, LotStatus } from '@prisma/client';
 
 // Tipo para los resultados de Prisma con relaciones incluidas
 type PrismaSaleWithRelations = Prisma.SaleGetPayload<{
@@ -331,4 +331,115 @@ export const salesService = {
       return mapSale(createdSale);
     });
   },
+  // Función para anular una venta y revertir sus efectos
+  async annulSale(saleId: string, userId: string): Promise<Sale> {
+    return await prisma.$transaction(async (tx) => {
+      // Paso A: Validar la Venta
+      const sale = await tx.sale.findUniqueOrThrow({
+        where: { id: saleId },
+        include: saleInclude
+      });
+
+      // Validar que no esté ya anulada
+      if (sale.status === OrderStatus.ANNULLED) {
+        throw new Error("Esta venta ya ha sido anulada.");
+      }
+
+      // Paso B: Revertir Inventario (StockMovements)
+      // Buscar todos los movimientos de salida asociados a esta venta
+      const movementsToReverse = await tx.stockMovement.findMany({
+        where: {
+          referenceId: saleId,
+          subType: StockMovementSubType.VENTA
+        }
+      });
+
+      // Iterar sobre movementsToReverse
+      for (const movement of movementsToReverse) {
+        // Validación de Lote
+        if (!movement.loteId) {
+          throw new Error("Error de integridad: Movimiento sin lote asociado.");
+        }
+
+        // Reversión (Crear movimiento de ENTRADA)
+        await tx.stockMovement.create({
+          data: {
+            quantity: Math.abs(movement.quantity), // Positivo para entrada
+            type: StockMovementType.ENTRADA,
+            subType: StockMovementSubType.ANULACION_VENTA,
+            costPerUnit: movement.costPerUnit,
+            totalCost: movement.totalCost ? Math.abs(Number(movement.totalCost)) : undefined,
+            productId: movement.productId,
+            loteId: movement.loteId,
+            userId: userId,
+            referenceId: saleId,
+            date: new Date(),
+            notes: `Anulación de venta #${saleId.substring(0, 8)} - Devolución de ${Math.abs(movement.quantity)} unidades del lote ${movement.loteId}`
+          }
+        });
+
+        // Devolver stock al Lote
+        const lot = await tx.stockLot.findUnique({
+          where: { id: movement.loteId }
+        });
+
+        if (lot) {
+          const newQuantity = lot.quantity + Math.abs(movement.quantity);
+          const newStatus = newQuantity > 0 ? LotStatus.ACTIVO : LotStatus.AGOTADO;
+
+          await tx.stockLot.update({
+            where: { id: movement.loteId },
+            data: {
+              quantity: newQuantity,
+              status: newStatus
+            }
+          });
+        }
+
+        // Devolver stock al Producto
+        await tx.product.update({
+          where: { id: movement.productId },
+          data: {
+            stock: { increment: Math.abs(movement.quantity) }
+          }
+        });
+      }
+
+      // Paso C: Revertir Movimiento de Caja
+      // Buscar el balance actual
+      const balance = await tx.cashMovement.findFirst({
+        orderBy: { date: 'desc' }
+      });
+
+      const prevBalance = balance?.newBalance || new Prisma.Decimal(0);
+      const newBalance = prevBalance.sub(sale.totalAmount); // Restar el monto de la venta
+
+      await tx.cashMovement.create({
+        data: {
+          type: CashMovementType.SALIDA,
+          amount: sale.totalAmount.negated(), // Negar el monto para la salida
+          category: 'ANULACION_VENTA',
+          description: `Anulación Venta ${saleId}`,
+          paymentMethod: sale.paymentMethod,
+          referenceId: sale.id,
+          userId: userId,
+          previousBalance: prevBalance,
+          newBalance: newBalance,
+          date: new Date()
+        }
+      });
+
+      // Paso D: Anular la Venta
+      const annulledSale = await tx.sale.update({
+        where: { id: saleId },
+        data: { status: OrderStatus.ANNULLED },
+        include: saleInclude
+      });
+
+      // Paso E: Devolver Resultado Completo
+      return mapSale(annulledSale);
+    });
+  }
 };
+
+export default salesService;

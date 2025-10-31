@@ -47,3 +47,19 @@ export const createSale = async (data: SaleFormData): Promise<Sale> => {
     throw error; // Relanzar para que TanStack Query pueda manejarlo
   }
 };
+
+/**
+ * Anula una venta existente (actualiza estado y revierte stock/caja en backend).
+ * @param id - El ID (string CUID) de la venta a anular.
+ * @returns Una promesa que resuelve a la venta actualizada (estado ANULADA).
+ */
+export const annulSale = async (id: string): Promise<Sale> => {
+  try {
+    // El token se adjunta automáticamente
+    const response = await api.put<Sale>(`/sales/${id}/annul`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error annulling sale ${id}:`, error);
+    throw error; // Relanzar para que react-query pueda manejarlo
+  }
+};

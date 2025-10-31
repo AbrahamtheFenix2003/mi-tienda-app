@@ -70,3 +70,40 @@ export const handleCreateSale = async (req: AuthRequest, res: Response) => {
 // Placeholders para futuras implementaciones (PUT, DELETE)
 // export const handleUpdateSale = async (req: AuthRequest, res: Response) => { ... };
 // export const handleDeleteSale = async (req: AuthRequest, res: Response) => { ... };
+
+export const handleAnnulSale = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ message: 'ID de venta inválido' });
+  }
+
+  // Verificar que el usuario está autenticado
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Usuario no autenticado' });
+  }
+
+  try {
+    const userId = req.user.id;
+    const sale = await salesService.annulSale(id, userId);
+    res.status(200).json(sale);
+  } catch (error: any) {
+    // Manejo específico de errores
+    if (error.message.includes('Venta no encontrada')) {
+      return res.status(404).json({ message: 'Venta no encontrada' });
+    }
+    
+    if (error.message.includes('ya ha sido anulada')) {
+      return res.status(409).json({ message: 'Esta venta ya ha sido anulada.' });
+    }
+    
+    if (error.message.includes('Error de integridad')) {
+      return res.status(500).json({ message: 'Error de integridad en los datos de la venta.' });
+    }
+
+    res.status(500).json({
+      message: 'Error interno del servidor al anular la venta',
+      error: error.message
+    });
+  }
+};

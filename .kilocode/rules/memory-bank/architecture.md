@@ -22,6 +22,7 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
     - /products → [products.routes.ts](apps/backend/src/api/routes/products.routes.ts:1)
     - /suppliers → [suppliers.routes.ts](apps/backend/src/api/routes/suppliers.routes.ts:1)
     - /purchases → [purchases.routes.ts](apps/backend/src/api/routes/purchases.routes.ts:1)
+    - /sales → [sales.routes.ts](apps/backend/src/api/routes/sales.routes.ts:1)
 - Seguridad:
   - Autenticación y autorización por rol con JWT:
     - [authenticateToken()](apps/backend/src/middlewares/auth.middleware.ts:15)
@@ -55,35 +56,38 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
   - Categoría y Zod: [category.ts](packages/types/src/category.ts:1)
   - Producto y Zod: [product.ts](packages/types/src/product.ts:1)
   - Compra y Zod: [purchase.ts](packages/types/src/purchase.ts:1)
+  - Venta y Zod: [sale.ts](packages/types/src/sale.ts:1)
 
 ## Esquema de Datos (Prisma)
 
 - Definiciones y relaciones principales en [schema.prisma](apps/backend/prisma/schema.prisma:1):
   - Enums: Role, OrderStatus, PaymentMethod, DeliveryMethod, StockMovementType, StockMovementSubType, CashMovementType, PurchaseStatus, LotStatus.
   - Modelos clave:
-    - User, Category, Product, Supplier, Purchase, PurchaseItem.
+    - User, Category, Product, Supplier, Purchase, PurchaseItem, Sale, SaleItem.
     - Inventario y Caja: StockLot, StockMovement, CashMovement.
   - Relaciones críticas:
     - Product ↔ PurchaseItem ↔ Purchase ↔ Supplier.
+    - Product ↔ SaleItem ↔ Sale ↔ User.
     - StockLot referencia Purchase y Supplier, con onDelete adecuados.
     - StockMovement referencia Product, StockLot y User.
 
-## Flujo Crítico: Crear Compra e Impacto en Inventario
+## Flujo Crítico: Crear Venta e Impacto en Inventario (FIFO)
 
 - Ruta y control:
-  - [purchases.routes.ts](apps/backend/src/api/routes/purchases.routes.ts:12) define GET/POST y aplica auth/roles.
-  - [handleCreatePurchase()](apps/backend/src/controllers/purchases.controller.ts:33) valida con Zod y delega al servicio.
+  - [sales.routes.ts](apps/backend/src/api/routes/sales.routes.ts:1) define GET/POST y aplica auth/roles.
+  - [handleCreateSale()](apps/backend/src/controllers/sales.controller.ts:1) valida con Zod y delega al servicio.
 - Servicio transaccional:
-  - [createPurchase()](apps/backend/src/services/purchases.service.ts:152) ejecuta lógica ACID con prisma.$transaction:
-    1) Generar invoiceNumber secuencial por año: [generateInvoiceNumber()](apps/backend/src/services/purchases.service.ts:131)
-    2) Crear Purchase con items: [purchases.service.ts](apps/backend/src/services/purchases.service.ts:180)
-    3) Para cada item:
-       - Crear StockLot: [purchases.service.ts](apps/backend/src/services/purchases.service.ts:205)
-       - Crear StockMovement ENTRADA COMPRA: [purchases.service.ts](apps/backend/src/services/purchases.service.ts:221)
-       - Incrementar stock del Product: [purchases.service.ts](apps/backend/src/services/purchases.service.ts:237)
-    4) Leer compra completa con relaciones y mapear DTO: [mapPurchase()](apps/backend/src/services/purchases.service.ts:86)
+  - [createSale()](apps/backend/src/services/sales.service.ts:1) ejecuta lógica ACID con prisma.$transaction:
+    1) Validar stock de productos.
+    2) Para cada item, descontar de `StockLot` en orden FIFO.
+    3) Calcular costo total y ganancia de la venta.
+    4) Crear `Sale` y `SaleItem`.
+    5) Crear `StockMovement` de SALIDA por cada lote afectado.
+    6) Crear `CashMovement` de ENTRADA por el total de la venta.
+    7) Actualizar `Product.stock` y `StockLot.quantity`.
+    8) Leer venta completa con relaciones y mapear DTO.
 
-### Diagrama de Secuencia: POST /api/v1/purchases
+### Diagrama de Secuencia: POST /api/v1/sales
 
 ```mermaid
 sequenceDiagram
@@ -95,23 +99,26 @@ participant Controller
 participant Service
 participant Prisma
 
-Client->>Frontend: Submit PurchaseForm
-Frontend->>Backend: POST /api/v1/purchases + JWT
-Backend->>Controller: Route match purchases.routes
-Controller->>Controller: Zod parse purchaseSchema
-Controller->>Service: createPurchase data userId
+Client->>Frontend: Submit SaleForm
+Frontend->>Backend: POST /api/v1/sales + JWT
+Backend->>Controller: Route match sales.routes
+Controller->>Controller: Zod parse saleSchema
+Controller->>Service: createSale data userId
 Service->>Prisma: $transaction begin
 Prisma-->>Service: tx handle
-Service->>Prisma: create Purchase with items
-Service->>Prisma: create StockLot per item
-Service->>Prisma: create StockMovement ENTRADA
-Service->>Prisma: update Product stock++
-Service->>Prisma: read Purchase include relations
-Prisma-->>Service: Purchase full
-Service-->>Controller: Mapped Purchase DTO
+Service->>Prisma: findMany Product (check stock)
+Service->>Prisma: findMany StockLot (FIFO)
+Service->>Prisma: create Sale
+Service->>Prisma: createMany SaleItem
+Service->>Prisma: updateMany StockLot (decrement stock)
+Service->>Prisma: updateMany Product (decrement stock)
+Service->>Prisma: createMany StockMovement
+Service->>Prisma: create CashMovement
+Service->>Prisma: read Sale include relations
+Prisma-->>Service: Sale full
+Service-->>Controller: Mapped Sale DTO
 Controller-->>Frontend: 201 Created JSON
-Frontend-->>Client: Render success
-```
+Frontend-->>Client: Render success```
 
 ## Flujo: Gestión de Productos e Imágenes
 
@@ -141,9 +148,9 @@ Frontend-->>Client: Render success
 - Node ESM + TypeScript NodeNext:
   - Importaciones con sufijo .js en runtime ESM.
 - Prisma como ORM con PostgreSQL:
-  - Tipado estricto y mapping a DTO para frontend: [purchases.service.ts](apps/backend/src/services/purchases.service.ts:41)
+  - Tipado estricto y mapping a DTO para frontend: [sales.service.ts](apps/backend/src/services/sales.service.ts:1)
 - Validación en frontera:
-  - Zod en shared types y validación en controller: [purchases.controller.ts](apps/backend/src/controllers/purchases.controller.ts:35)
+  - Zod en shared types y validación en controller: [sales.controller.ts](apps/backend/src/controllers/sales.controller.ts:1)
 - State Management:
   - TanStack Query con cliente singleton browser: [QueryProvider.tsx](apps/frontend/components/QueryProvider.tsx:24)
 
@@ -163,7 +170,7 @@ Frontend-->>Client: Render success
   - next config: [next.config.ts](apps/frontend/next.config.ts:3)
 - Shared Types
   - índice: [index.ts](packages/types/src/index.ts:1)
-  - dominios: [product.ts](packages/types/src/product.ts:1), [purchase.ts](packages/types/src/purchase.ts:1), [category.ts](packages/types/src/category.ts:1), [user.ts](packages/types/src/user.ts:1)
+  - dominios: [product.ts](packages/types/src/product.ts:1), [purchase.ts](packages/types/src/purchase.ts:1), [category.ts](packages/types/src/category.ts:1), [user.ts](packages/types/src/user.ts:1), [sale.ts](packages/types/src/sale.ts:1)
 
 ## Puntos de Atención y Extensiones
 
@@ -172,5 +179,5 @@ Frontend-->>Client: Render success
 - Integridad de inventario:
   - Todas las mutaciones de stock deben generar StockMovement y actualizar Product.stock en transacción.
 - Próximas extensiones sugeridas:
-  - Endpoints PUT/DELETE de compras con subType AJUSTE_COMPRA_EDITADA.
+  - Endpoints PUT/DELETE de ventas para anulación y edición.
   - Auditoría de CashMovement en compras según método de pago.

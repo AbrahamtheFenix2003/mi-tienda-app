@@ -26,4 +26,7 @@ router.post('/', salesController.handleCreateSale);
 // DELETE /:id (Eliminar venta)
 // router.delete('/:id', salesController.handleDeleteSale);
 
+// PUT /:id/annul - Anular venta
+router.put('/:id/annul', salesController.handleAnnulSale);
+
 export default router;

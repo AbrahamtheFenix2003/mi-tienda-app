@@ -1,16 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Loader2, AlertTriangle, PlusCircle, ShoppingCart } from 'lucide-react';
-import { fetchSales } from '@/services/salesService';
+import { fetchSales, annulSale } from '@/services/salesService';
 import { Sale } from '@mi-tienda/types';
 import { SalesTable } from '@/components/admin/SalesTable';
+import { AnnulSaleModal } from '@/components/admin/AnnulSaleModal';
 
 function PuntoDeVentaPage() {
   // Obtener el cliente de Query
   const queryClient = useQueryClient();
+
+  // Estados para el modal de anulación
+  const [isAnnulModalOpen, setIsAnnulModalOpen] = useState(false);
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
   // Obtener las ventas usando useQuery
   const { data: sales, isLoading, error } = useQuery({
@@ -18,15 +23,49 @@ function PuntoDeVentaPage() {
     queryFn: fetchSales,
   });
 
-  // Funciones para las acciones (placeholder por ahora)
+  // Mutación para anular una venta
+  const annulMutation = useMutation({
+    mutationFn: annulSale,
+    onSuccess: () => {
+      alert('Venta anulada correctamente.');
+      queryClient.invalidateQueries({ queryKey: ['admin-sales'] });
+      handleCloseAnnulModal();
+    },
+    onError: (error: unknown) => {
+      console.error('Error al anular la venta:', error);
+      // Mostrar el error de negocio del backend (ej: "ya ha sido anulada")
+      let errorMessage = 'Error al anular la venta.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const errorObj = error as { response?: { data?: { message?: string } } };
+        errorMessage = errorObj.response?.data?.message || errorMessage;
+      }
+      alert(errorMessage);
+    },
+  });
+
+  // Funciones para las acciones
   const handleViewDetails = (sale: Sale) => {
     console.log('Ver detalles de venta:', sale.id);
     // Aquí se implementará la lógica para ver detalles
   };
 
   const handleAnnul = (sale: Sale) => {
-    console.log('Anular venta:', sale.id);
-    // Aquí se implementará la lógica para anular
+    setSelectedSale(sale);
+    setIsAnnulModalOpen(true);
+  };
+
+  // Handlers para el modal de anulación
+  const handleCloseAnnulModal = () => {
+    setSelectedSale(null);
+    setIsAnnulModalOpen(false);
+  };
+
+  const handleConfirmAnnul = () => {
+    if (selectedSale) {
+      annulMutation.mutate(selectedSale.id);
+    }
   };
 
   // Función para renderizar el contenido principal
@@ -101,6 +140,15 @@ function PuntoDeVentaPage() {
 
       {/* Contenido principal */}
       {renderContent()}
+
+      {/* Modal de anulación de venta */}
+      <AnnulSaleModal
+        isOpen={isAnnulModalOpen}
+        onClose={handleCloseAnnulModal}
+        onConfirm={handleConfirmAnnul}
+        isLoading={annulMutation.isPending}
+        saleIdentifier={selectedSale?.customerName || selectedSale?.id}
+      />
     </div>
   );
 }

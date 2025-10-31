@@ -2,18 +2,26 @@
 
 ## Foco de Trabajo
 
-El foco actual del desarrollo es estabilizar y expandir el módulo de **Compras e Inventario**. La funcionalidad crítica de crear una compra y su impacto transaccional en el stock (lotes y movimientos) está implementada.
+El foco actual del desarrollo es la implementación y estabilización del módulo de **Punto de Venta (POS)**. Se ha completado la funcionalidad crítica para crear una venta, con su correspondiente impacto transaccional en el inventario (descuento de lotes FIFO) y en la caja.
 
 ## Cambios Recientes
 
--   **Creación de Compras**: Se implementó el endpoint `POST /api/v1/purchases` que, de forma transaccional, crea la compra, genera lotes de stock y registra los movimientos de inventario correspondientes.
--   **Validación Zod**: Se integró `zod` en el backend y frontend para validar los formularios de creación de compras, asegurando la integridad de los datos.
--   **Interfaz de Compras**: Se desarrolló la interfaz en `apps/frontend` para listar y crear nuevas compras, incluyendo búsqueda de productos y un carrito de compras.
--   **Modal de Detalles de Compra**: Se implementó un modal de solo lectura (`PurchaseDetailsModal`) que muestra información completa de una compra, incluyendo datos generales (proveedor, fecha, factura, método de pago, estado) y tabla detallada de productos con cantidades, costos unitarios y subtotales.
+-   **Módulo de Ventas (Backend)**: Se implementó el endpoint `POST /api/v1/sales` que, de forma transaccional:
+    -   Valida el stock disponible.
+    -   Descuenta productos de los lotes de stock más antiguos (FIFO).
+    -   Calcula el costo y la ganancia de la venta.
+    -   Crea registros en los modelos `Sale`, `SaleItem`.
+    -   Genera `StockMovement` de salida y `CashMovement` de entrada.
+    -   Actualiza el stock en los modelos `Product` y `StockLot`.
+-   **Módulo de Ventas (Frontend)**: Se desarrolló la interfaz en `apps/frontend` para:
+    -   Listar las ventas existentes (`/punto-de-ventas`).
+    -   Crear nuevas ventas (`/punto-de-ventas/nuevo`) a través de un formulario con búsqueda de productos y un carrito de compras dinámico.
+-   **Validación Zod**: Se integró `zod` en el backend y frontend para validar los formularios de creación de ventas.
+-   **Tipos y Esquema**: Se añadieron los modelos `Sale` y `SaleItem` al `schema.prisma` y los tipos correspondientes en `packages/types`.
 
 ## Próximos Pasos
 
-1.  **Edición de Compras**: Implementar la funcionalidad para editar una compra existente. Esto requerirá lógica transaccional compleja para revertir o ajustar los movimientos de stock y lotes previos.
-2.  **Anulación de Compras**: Crear el flujo para anular una compra, que también debe revertir los movimientos de inventario asociados.
-3.  **Reportería Básica**: Desarrollar vistas en el frontend para visualizar los movimientos de stock por producto y un historial de compras por proveedor.
-4.  **Gestión de Caja**: Implementar los `CashMovement` para que se registren automáticamente al crear una compra, afectando el saldo de caja según el método de pago.
+1.  **Anulación de Ventas**: Implementar la funcionalidad para anular una venta existente. Esto requerirá una lógica transaccional para revertir los movimientos de stock y de caja.
+2.  **Detalles de Venta**: Crear un modal o página para ver los detalles completos de una venta.
+3.  **Edición de Compras**: Continuar con la implementación de la edición de compras, que fue pausada para priorizar el módulo de ventas.
+4.  **Reportería de Ventas**: Desarrollar vistas en el frontend para analizar las ventas por día, por producto y por vendedor.
