@@ -4,6 +4,7 @@ import productRoutes from './routes/products.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import supplierRoutes from './routes/suppliers.routes.js';
 import purchaseRoutes from './routes/purchases.routes.js';
+import salesRoutes from './routes/sales.routes.js';
  
 const router = Router();
  
@@ -22,6 +23,9 @@ router.use('/suppliers', supplierRoutes);
 // Montar rutas de compras
 router.use('/purchases', purchaseRoutes);
  
+// Montar rutas de ventas
+router.use('/sales', salesRoutes);
+
 // ... aquí montaremos /orders, etc.
  
 export default router;
