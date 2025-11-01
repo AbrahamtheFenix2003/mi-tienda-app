@@ -23,6 +23,8 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
     - /suppliers → [suppliers.routes.ts](apps/backend/src/api/routes/suppliers.routes.ts:1)
     - /purchases → [purchases.routes.ts](apps/backend/src/api/routes/purchases.routes.ts:1)
     - /sales → [sales.routes.ts](apps/backend/src/api/routes/sales.routes.ts:1)
+    - /inventory → [inventory.routes.ts](apps/backend/src/api/routes/inventory.routes.ts:1)
+    - /cash → [cash.routes.ts](apps/backend/src/api/routes/cash.routes.ts:1)
 - Seguridad:
   - Autenticación y autorización por rol con JWT:
     - [authenticateToken()](apps/backend/src/middlewares/auth.middleware.ts:15)
@@ -50,7 +52,7 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
 ### Tipos Compartidos (packages/types)
 
 - Índice y módulos:
-  - [index.ts](packages/types/src/index.ts:1) reexporta user, category, product, supplier, purchase, sale, inventory.
+  - [index.ts](packages/types/src/index.ts:1) reexporta user, category, product, supplier, purchase, sale, inventory, cash.
 - Contratos de dominio y validación:
   - Usuario y Roles: [user.ts](packages/types/src/user.ts:1)
   - Categoría y Zod: [category.ts](packages/types/src/category.ts:1)
@@ -58,6 +60,7 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
   - Compra y Zod: [purchase.ts](packages/types/src/purchase.ts:1)
   - Venta y Zod: [sale.ts](packages/types/src/sale.ts:1)
   - Inventario: [inventory.ts](packages/types/src/inventory.ts:1)
+  - Caja: [cash.ts](packages/types/src/cash.ts:1)
 
 ## Esquema de Datos (Prisma)
 
@@ -206,3 +209,13 @@ Frontend-->>Client: Render success```
   - [inventory.service.ts](apps/backend/src/services/inventory.service.ts:1) implementa la lógica de negocio para obtener datos de lotes y movimientos
 - Enrutamiento principal:
   - [api/index.ts](apps/backend/src/api/index.ts:1) monta subrutas bajo /inventory
+
+## Flujo: Movimientos de Caja
+
+- Endpoint protegido por autenticación JWT:
+  - Consultar movimientos de caja: `GET /api/v1/cash/movements` → [cash.routes.ts](apps/backend/src/api/routes/cash.routes.ts:1)
+- Controladores y servicios:
+  - [cash.controller.ts](apps/backend/src/controllers/cash.controller.ts:1) implementa `handleGetCashMovements()`
+  - [cash.service.ts](apps/backend/src/services/cash.service.ts:1) implementa `getCashMovements()` con `include: { user: true }` y `orderBy: { createdAt: 'desc' }`
+- Enrutamiento principal:
+  - [api/index.ts](apps/backend/src/api/index.ts:1) monta subrutas bajo /cash
