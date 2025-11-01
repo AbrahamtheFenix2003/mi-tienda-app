@@ -2,26 +2,24 @@
 
 ## Foco de Trabajo
 
-El foco actual del desarrollo es la implementación y estabilización del módulo de **Punto de Venta (POS)**. Se ha completado la funcionalidad crítica para crear una venta, con su correspondiente impacto transaccional en el inventario (descuento de lotes FIFO) y en la caja.
+El foco de trabajo se ha centrado en la creación del nuevo módulo de **Gestión de Almacén**. Se ha sentado la base tanto en el backend como en el frontend para visualizar el estado del inventario.
 
 ## Cambios Recientes
 
--   **Módulo de Ventas (Backend)**: Se implementó el endpoint `POST /api/v1/sales` que, de forma transaccional:
-    -   Valida el stock disponible.
-    -   Descuenta productos de los lotes de stock más antiguos (FIFO).
-    -   Calcula el costo y la ganancia de la venta.
-    -   Crea registros en los modelos `Sale`, `SaleItem`.
-    -   Genera `StockMovement` de salida y `CashMovement` de entrada.
-    -   Actualiza el stock en los modelos `Product` y `StockLot`.
--   **Módulo de Ventas (Frontend)**: Se desarrolló la interfaz en `apps/frontend` para:
-    -   Listar las ventas existentes (`/punto-de-ventas`).
-    -   Crear nuevas ventas (`/punto-de-ventas/nuevo`) a través de un formulario con búsqueda de productos y un carrito de compras dinámico.
--   **Validación Zod**: Se integró `zod` en el backend y frontend para validar los formularios de creación de ventas.
--   **Tipos y Esquema**: Se añadieron los modelos `Sale` y `SaleItem` al `schema.prisma` y los tipos correspondientes en `packages/types`.
+-   **Módulo de Almacén (Frontend)**: Se ha creado la página principal en `apps/frontend/app/(admin)/almacen/page.tsx`.
+    -   Implementa una interfaz de pestañas para "Lotes de Stock" y "Historial de Movimientos".
+    -   Utiliza TanStack Query para cargar los datos de ambos endpoints del backend de forma paralela.
+    -   Maneja los estados de carga, error y vacío para una mejor experiencia de usuario.
+-   **Componentes de Tabla (Frontend)**: Se crearon los componentes `StockLotsTable` y `StockMovementsTable` para renderizar los datos en la página de "Almacén".
+-   **Servicio de Inventario (Frontend)**: Se creó `apps/frontend/services/inventoryService.ts` con las funciones `fetchStockLots` y `fetchStockMovements` para comunicarse con la API.
+-   **Tipos Compartidos**: Se ha añadido el fichero `packages/types/src/inventory.ts` con las interfaces `StockLot` y `StockMovement`, y los enums correspondientes. Se han exportado correctamente en el `index.ts` del paquete.
+-   **Endpoints de Inventario (Backend)**: Se implementaron endpoints de solo lectura para consultar el estado del inventario:
+    -   `GET /api/v1/inventory/lots`: Obtiene todos los lotes de stock con sus relaciones (producto y proveedor).
+    -   `GET /api/v1/inventory/movements`: Obtiene todos los movimientos de stock con sus relaciones (producto, lote y usuario).
+    -   Ambos endpoints están protegidos por autenticación JWT y autorización por roles (SUPER_ADMIN, SUPER_VENDEDOR).
 
 ## Próximos Pasos
 
-1.  **Anulación de Ventas**: Implementar la funcionalidad para anular una venta existente. Esto requerirá una lógica transaccional para revertir los movimientos de stock y de caja.
-2.  **Detalles de Venta**: Crear un modal o página para ver los detalles completos de una venta.
-3.  **Edición de Compras**: Continuar con la implementación de la edición de compras, que fue pausada para priorizar el módulo de ventas.
-4.  **Reportería de Ventas**: Desarrollar vistas en el frontend para analizar las ventas por día, por producto y por vendedor.
+1.  **Flujo de Caja**: Implementar la funcionalidad para visualizar y gestionar los movimientos de caja.
+2.  **Edición de Compras**: Continuar con la implementación de la edición de compras, que fue pausada para priorizar el módulo de ventas.
+3.  **Reportería de Ventas**: Desarrollar vistas en el frontend para analizar las ventas por día, por producto y por vendedor.

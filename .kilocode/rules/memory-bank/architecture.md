@@ -50,13 +50,14 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
 ### Tipos Compartidos (packages/types)
 
 - Índice y módulos:
-  - [index.ts](packages/types/src/index.ts:1) reexporta user, category, product, supplier, purchase.
+  - [index.ts](packages/types/src/index.ts:1) reexporta user, category, product, supplier, purchase, sale, inventory.
 - Contratos de dominio y validación:
   - Usuario y Roles: [user.ts](packages/types/src/user.ts:1)
   - Categoría y Zod: [category.ts](packages/types/src/category.ts:1)
   - Producto y Zod: [product.ts](packages/types/src/product.ts:1)
   - Compra y Zod: [purchase.ts](packages/types/src/purchase.ts:1)
   - Venta y Zod: [sale.ts](packages/types/src/sale.ts:1)
+  - Inventario: [inventory.ts](packages/types/src/inventory.ts:1)
 
 ## Esquema de Datos (Prisma)
 
@@ -165,12 +166,13 @@ Frontend-->>Client: Render success```
   - prisma: [schema.prisma](apps/backend/prisma/schema.prisma:1), migrations
 - Frontend
   - app router: [app/layout.tsx](apps/frontend/app/layout.tsx:13)
+  - components: [SaleDetailsModal.tsx](apps/frontend/components/admin/SaleDetailsModal.tsx:1)
   - providers: [QueryProvider.tsx](apps/frontend/components/QueryProvider.tsx:1), [useAuth.tsx](apps/frontend/hooks/useAuth.tsx:1)
-  - services: [api.ts](apps/frontend/services/api.ts:1)
+  - services: [api.ts](apps/frontend/services/api.ts:1), [inventoryService.ts](apps/frontend/services/inventoryService.ts:1)
   - next config: [next.config.ts](apps/frontend/next.config.ts:3)
 - Shared Types
   - índice: [index.ts](packages/types/src/index.ts:1)
-  - dominios: [product.ts](packages/types/src/product.ts:1), [purchase.ts](packages/types/src/purchase.ts:1), [category.ts](packages/types/src/category.ts:1), [user.ts](packages/types/src/user.ts:1), [sale.ts](packages/types/src/sale.ts:1)
+  - dominios: [product.ts](packages/types/src/product.ts:1), [purchase.ts](packages/types/src/purchase.ts:1), [category.ts](packages/types/src/category.ts:1), [user.ts](packages/types/src/user.ts:1), [sale.ts](packages/types/src/sale.ts:1), [inventory.ts](packages/types/src/inventory.ts:1)
 
 ## Puntos de Atención y Extensiones
 
@@ -181,3 +183,26 @@ Frontend-->>Client: Render success```
 - Próximas extensiones sugeridas:
   - Endpoints PUT/DELETE de ventas para anulación y edición.
   - Auditoría de CashMovement en compras según método de pago.
+
+## Flujo: Gestión de Productos e Imágenes
+
+- Endpoints protegidos SUPER_ADMIN:
+  - Crear/Actualizar/Eliminar: [products.routes.ts](apps/backend/src/api/routes/products.routes.ts:16)
+- Subida de imágenes:
+  - Single: [handleUploadProductImage()](apps/backend/src/controllers/products.controller.ts:130) con [upload.single](apps/backend/src/api/routes/products.routes.ts:42)
+  - Múltiples: [handleUploadProductImages()](apps/backend/src/controllers/products.controller.ts:155) con [upload.array](apps/backend/src/api/routes/products.routes.ts:51)
+  - Por índice 0..2: [handleUploadProductImageByIndex()](apps/backend/src/controllers/products.controller.ts:185)
+  - Borrado por índice: [handleDeleteProductImageByIndex()](apps/backend/src/controllers/products.controller.ts:225)
+- Exposición pública de archivos:
+  - [app.ts](apps/backend/src/app.ts:21) sirve /uploads/**
+
+## Flujo: Gestión de Inventario (Endpoints de solo lectura)
+
+- Endpoints protegidos SUPER_ADMIN, SUPER_VENDEDOR:
+  - Consultar lotes de stock: `GET /api/v1/inventory/lots` → [inventory.routes.ts](apps/backend/src/api/routes/inventory.routes.ts:1)
+  - Consultar movimientos de stock: `GET /api/v1/inventory/movements` → [inventory.routes.ts](apps/backend/src/api/routes/inventory.routes.ts:1)
+- Controladores y servicios:
+  - [inventory.controller.ts](apps/backend/src/controllers/inventory.controller.ts:1) implementa handlers para ambos endpoints
+  - [inventory.service.ts](apps/backend/src/services/inventory.service.ts:1) implementa la lógica de negocio para obtener datos de lotes y movimientos
+- Enrutamiento principal:
+  - [api/index.ts](apps/backend/src/api/index.ts:1) monta subrutas bajo /inventory

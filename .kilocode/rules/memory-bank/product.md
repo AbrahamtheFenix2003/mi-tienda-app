@@ -22,6 +22,7 @@ La aplicación se divide en dos grandes áreas:
     -   **SUPER_ADMIN:** Control total sobre usuarios, productos, categorías, proveedores y transacciones.
     -   **SUPER_VENDEDOR:** Puede gestionar inventario (compras) y realizar ventas.
     -   **VENDEDOR:** Rol limitado, enfocado en registrar ventas.
+    -   **Gestión de Almacén**: Visualización de lotes de stock y movimientos de inventario.
 
 2.  **Tienda en Línea (Storefront - `/`):** Una interfaz pública para que los clientes exploren y compren productos.
     -   Vista de catálogo de productos.
