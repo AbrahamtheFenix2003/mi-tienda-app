@@ -30,6 +30,36 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # Servicio del backend
+  backend:
+    # Construir la imagen desde el Dockerfile en el directorio actual
+    build: .
+    
+    # Le damos un nombre específico al contenedor para identificarlo fácilmente
+    container_name: mi-tienda-backend
+    
+    # Política de reinicio: si el contenedor se detiene, Docker intentará levantarlo de nuevo
+    restart: always
+    
+    # Variables de entorno
+    environment:
+      DATABASE_URL: "postgresql://tienda_user:supersecretpassword123@postgres:5432/mi_tienda_db?schema=public"
+      PORT: 8080
+      JWT_SECRET: "mi-clave-secreta-para-jwt-2025"
+      
+    # Mapeo de puertos: conecta el puerto 8080 de tu máquina al 8080 del contenedor
+    # Esto nos permite acceder a la API desde localhost:8080
+    ports:
+      - "8080:8080"
+      
+    # Volúmenes: montar el directorio uploads para persistencia de archivos
+    volumes:
+      - ./uploads:/app/uploads
+      
+    # Dependencias: el backend debe esperar a que la base de datos esté lista
+    depends_on:
+      - postgres
+
 # Definición de los volúmenes que Docker gestionará
 volumes:
   pgdata: {}
