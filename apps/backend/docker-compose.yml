@@ -1,6 +1,3 @@
-# Versión del formato de docker-compose
-version: '3.8'
-
 # Definición de los servicios (contenedores)
 services:
   # Nombre de nuestro servicio de base de datos
@@ -32,9 +29,12 @@ services:
 
   # Servicio del backend
   backend:
-    # Construir la imagen desde el Dockerfile en el directorio actual
-    build: .
-    
+    # Construir la imagen desde la raíz del monorepo
+    # El contexto debe ser la raíz para acceder a packages/types y apps/backend
+    build:
+      context: ../..  # Raíz del monorepo (dos niveles arriba)
+      dockerfile: apps/backend/Dockerfile  # Ruta al Dockerfile desde la raíz
+
     # Le damos un nombre específico al contenedor para identificarlo fácilmente
     container_name: mi-tienda-backend
     
@@ -54,7 +54,7 @@ services:
       
     # Volúmenes: montar el directorio uploads para persistencia de archivos
     volumes:
-      - ./uploads:/app/uploads
+      - ./uploads:/app/apps/backend/uploads
       
     # Dependencias: el backend debe esperar a que la base de datos esté lista
     depends_on:

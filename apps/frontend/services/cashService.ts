@@ -1,5 +1,5 @@
 import api from './api';
-import type { CashMovementWithRelations } from '@mi-tienda/types';
+import type { CashMovementWithRelations, CreateManualMovementInput, UpdateManualMovementInput } from '@mi-tienda/types';
 
 export async function getCashMovements(): Promise<CashMovementWithRelations[]> {
   try {
@@ -10,3 +10,11 @@ export async function getCashMovements(): Promise<CashMovementWithRelations[]> {
     throw error;
   }
 }
+
+export const createManualMovement = (data: CreateManualMovementInput) => {
+  return api.post('/cash/manual', data);
+};
+
+export const updateManualMovement = (id: string, data: UpdateManualMovementInput) => {
+  return api.put(`/cash/manual/${id}`, data);
+};

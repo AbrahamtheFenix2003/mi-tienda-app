@@ -11,4 +11,9 @@ const controller = new CashController();
 // Solo usuarios autenticados pueden acceder
 router.get('/movements', authenticateToken, controller.handleGetCashMovements);
 
+// Rutas para movimientos manuales de caja
+// Solo usuarios autenticados pueden acceder
+router.post('/manual', authenticateToken, controller.handleCreateManualMovement);
+router.put('/manual/:id', authenticateToken, controller.handleUpdateManualMovement);
+
 export default router;

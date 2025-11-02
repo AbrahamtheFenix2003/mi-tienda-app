@@ -9,13 +9,18 @@
     "start": "node dist/server.js",
     "studio": "npx prisma studio",
     "migrate:dev": "npx prisma migrate dev",
-    "generate": "npx prisma generate"
+    "generate": "npx prisma generate",
+    "seed": "node prisma/seed.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@mi-tienda/types": "*",
     "@prisma/client": "^6.18.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",

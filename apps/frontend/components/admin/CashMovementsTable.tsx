@@ -2,13 +2,14 @@
 
 import React from "react";
 import type { CashMovementWithRelations } from "@mi-tienda/types";
-import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { ArrowUpCircle, ArrowDownCircle, Pencil } from "lucide-react";
 
 interface CashMovementsTableProps {
   data: CashMovementWithRelations[];
+  onEdit?: (movement: CashMovementWithRelations) => void;
 }
 
-export default function CashMovementsTable({ data }: CashMovementsTableProps) {
+export default function CashMovementsTable({ data, onEdit }: CashMovementsTableProps) {
   return (
     <div className="overflow-auto">
       <table className="min-w-full divide-y divide-gray-200 border">
@@ -20,6 +21,7 @@ export default function CashMovementsTable({ data }: CashMovementsTableProps) {
             <th className="px-4 py-2 text-right text-sm font-medium text-gray-700">Monto</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Método pago</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Usuario</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Acciones</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -49,6 +51,19 @@ export default function CashMovementsTable({ data }: CashMovementsTableProps) {
                 <td className="px-4 py-3 text-sm text-gray-700 text-right font-medium">{amountFormatted}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.paymentMethod ?? "-"}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.user?.name ?? mov.user?.email ?? "-"}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">
+                  {mov.referenceId === null ? (
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
+                      onClick={() => onEdit?.(mov)}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-500">Auto</span>
+                  )}
+                </td>
               </tr>
             );
           })}
