@@ -1,0 +1,154 @@
+# ============================================
+# Docker Compose para Mi Tienda App
+# Monorepo con Frontend (Next.js) + Backend (Express) + PostgreSQL
+# ============================================
+
+services:
+  # ==========================================
+  # Base de datos PostgreSQL
+  # ==========================================
+  postgres:
+    # Usaremos la imagen oficial de Postgres v16, en su versión ligera "alpine"
+    image: postgres:16-alpine
+
+    # Le damos un nombre específico al contenedor para identificarlo fácilmente
+    container_name: mi-tienda-db
+
+    # Política de reinicio: si el contenedor se detiene, Docker intentará levantarlo de nuevo
+    restart: unless-stopped
+
+    # Variables de entorno para configurar la base de datos
+    environment:
+      POSTGRES_USER: tienda_user # El usuario de la base de datos
+      POSTGRES_PASSWORD: supersecretpassword123 # La contraseña (cámbiala si quieres)
+      POSTGRES_DB: mi_tienda_db # El nombre de la base de datos que se creará
+
+    # Mapeo de puertos: conecta el puerto 5432 de tu máquina al 5432 del contenedor
+    # Esto nos permite conectarnos a la base de datos desde localhost:5432
+    ports:
+      - "5432:5432"
+
+    # Volúmenes: aquí es donde se guardarán los datos de forma persistente
+    # Incluso si borramos el contenedor, los datos en este volumen no se perderán
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+    # Red interna para comunicación entre servicios
+    networks:
+      - mi-tienda-network
+
+    # Health check para verificar que PostgreSQL está listo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tienda_user -d mi_tienda_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Backend (Express + Prisma + TypeScript)
+  # ==========================================
+  backend:
+    # Construir la imagen desde la raíz del monorepo
+    build:
+      context: .  # Raíz del monorepo (donde está este docker-compose.yml)
+      dockerfile: apps/backend/Dockerfile  # Ruta al Dockerfile desde la raíz
+
+    # Le damos un nombre específico al contenedor para identificarlo fácilmente
+    container_name: mi-tienda-backend
+
+    # Política de reinicio
+    restart: unless-stopped
+
+    # Variables de entorno
+    environment:
+      DATABASE_URL: "postgresql://tienda_user:supersecretpassword123@postgres:5432/mi_tienda_db?schema=public"
+      PORT: 8080
+      JWT_SECRET: "mi-clave-secreta-para-jwt-2025"
+      NODE_ENV: production
+
+    # Mapeo de puertos: conecta el puerto 8080 de tu máquina al 8080 del contenedor
+    # Esto nos permite acceder a la API desde localhost:8080
+    ports:
+      - "8080:8080"
+
+    # Volúmenes: montar el directorio uploads para persistencia de archivos
+    volumes:
+      - ./apps/backend/uploads:/app/apps/backend/uploads
+
+    # Dependencias: el backend debe esperar a que la base de datos esté lista
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    # Red interna
+    networks:
+      - mi-tienda-network
+
+    # Health check para verificar que el backend está respondiendo
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:8080/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\" || exit 1"]
+      interval: 30s
+      timeout: 3s
+      start_period: 40s
+      retries: 3
+
+  # ==========================================
+  # Frontend (Next.js 16 en modo standalone)
+  # ==========================================
+  frontend:
+    # Construir la imagen desde la raíz del monorepo
+    build:
+      context: .  # Raíz del monorepo
+      dockerfile: apps/frontend/Dockerfile  # Ruta al Dockerfile desde la raíz
+
+    # Le damos un nombre específico al contenedor
+    container_name: mi-tienda-frontend
+
+    # Política de reinicio
+    restart: unless-stopped
+
+    # Variables de entorno
+    environment:
+      NODE_ENV: production
+      # URL del backend (desde el contenedor usa el nombre del servicio)
+      # Para desarrollo local usar: http://localhost:8080/api/v1
+      NEXT_PUBLIC_API_URL: http://backend:8080/api/v1
+      NEXT_TELEMETRY_DISABLED: 1
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
+
+    # Mapeo de puertos: conecta el puerto 3000 de tu máquina al 3000 del contenedor
+    # Accede a la aplicación desde http://localhost:3000
+    ports:
+      - "3000:3000"
+
+    # Dependencias: el frontend debe esperar a que el backend esté listo
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    # Red interna
+    networks:
+      - mi-tienda-network
+
+    # Health check para verificar que Next.js está respondiendo
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\" || exit 1"]
+      interval: 30s
+      timeout: 3s
+      start_period: 30s
+      retries: 3
+
+# ==========================================
+# Redes
+# ==========================================
+networks:
+  mi-tienda-network:
+    driver: bridge
+
+# ==========================================
+# Volúmenes
+# ==========================================
+volumes:
+  pgdata:
+    driver: local

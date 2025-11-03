@@ -38,7 +38,7 @@ export default function NuevoProductoPage() {
       price: 0,
       originalPrice: undefined,
       acquisitionCost: undefined,
-      categoryId: '',
+      categoryId: undefined,
     },
   });
 
