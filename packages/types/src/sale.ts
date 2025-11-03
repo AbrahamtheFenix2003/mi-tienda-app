@@ -1,5 +1,6 @@
 // packages/types/src/sale.ts
 
+import type { Prisma } from '@prisma/client';
 import { Product } from './product.js';
 import { User } from './user.js';
 import { PaymentMethod } from './purchase.js'; // Reutilizamos el tipo
@@ -37,6 +38,17 @@ export interface Sale {
   updatedAt: string; // DateTime
   items: SaleItem[];
 }
+
+export type SaleWithRelations = Prisma.SaleGetPayload<{
+  include: {
+    soldBy: true;
+    items: {
+      include: {
+        product: true;
+      };
+    };
+  };
+}>;
 
 // --- ESQUEMAS ZOD (Formulario) ---
 

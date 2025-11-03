@@ -7,6 +7,7 @@ import purchaseRoutes from './routes/purchases.routes.js';
 import salesRoutes from './routes/sales.routes.js';
 import inventoryRoutes from './routes/inventory.routes.js';
 import cashRoutes from './routes/cash.routes.js';
+import reportsRoutes from './routes/reports.routes.js';
  
 const router = Router();
  
@@ -33,5 +34,8 @@ router.use('/inventory', inventoryRoutes);
 
 // Montar rutas de caja
 router.use('/cash', cashRoutes);
+
+// Montar rutas de reportes
+router.use('/reports', reportsRoutes);
  
 export default router;
