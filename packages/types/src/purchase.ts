@@ -70,7 +70,26 @@ export const purchaseItemSchema = z.object({
 });
 
 export const purchaseSchema = z.object({
-  purchaseDate: z.coerce.date(),
+  purchaseDate: z.preprocess(
+    (val) => {
+      // Si ya es una Date, devolverla
+      if (val instanceof Date) return val;
+
+      // Si es un string de fecha (desde un input type="date")
+      if (typeof val === 'string') {
+        // Agregar tiempo local para evitar desplazamiento de zona horaria
+        // Si el string no tiene tiempo, agregar medianoche en hora local
+        if (!val.includes('T')) {
+          // Formato: "2025-11-03" -> "2025-11-03T00:00:00"
+          return new Date(`${val}T00:00:00`);
+        }
+        return new Date(val);
+      }
+
+      return val;
+    },
+    z.date({ message: "La fecha de compra es requerida." })
+  ),
   supplierId: z.number().int().positive({ message: "Debe seleccionar un proveedor." }),
   paymentMethod: z.enum(["YAPE", "PLIN", "EFECTIVO", "TRANSFERENCIA", "CHEQUE", "CREDITO"]).optional().nullable(),
   notes: z.string().optional().nullable(),

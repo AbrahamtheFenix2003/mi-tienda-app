@@ -417,7 +417,7 @@ export const salesService = {
       await tx.cashMovement.create({
         data: {
           type: CashMovementType.SALIDA,
-          amount: sale.totalAmount.negated(), // Negar el monto para la salida
+          amount: sale.totalAmount, // Monto positivo - el tipo SALIDA ya indica que se resta
           category: 'ANULACION_VENTA',
           description: `Anulación Venta ${saleId}`,
           paymentMethod: sale.paymentMethod,

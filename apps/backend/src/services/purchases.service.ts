@@ -252,14 +252,13 @@ export const createPurchase = async (data: PurchaseFormData, userId: string): Pr
 
     // Calcular saldos
     const previousBalance = lastCashMovement ? lastCashMovement.newBalance : new Prisma.Decimal(0);
-    const movementAmount = new Prisma.Decimal(totalAmount).negated(); // Negado, es una salida
-    const newBalance = previousBalance.plus(movementAmount);
+    const newBalance = previousBalance.sub(totalAmount); // Restar el monto de la compra
 
     // Crear el CashMovement
     await tx.cashMovement.create({
       data: {
         type: CashMovementType.SALIDA,
-        amount: movementAmount,
+        amount: totalAmount, // Monto positivo - el tipo SALIDA ya indica que se resta
         category: 'COMPRA',
         description: `Compra a Proveedor #${newPurchase.supplierId}`,
         paymentMethod: newPurchase.paymentMethod as any,
@@ -564,14 +563,13 @@ export const updatePurchase = async (purchaseId: string, data: PurchaseFormData,
         });
 
         const previousBalance = lastCashMovement ? lastCashMovement.newBalance : new Prisma.Decimal(0);
-        const movementAmount = new Prisma.Decimal(newTotalAmount).negated(); // Negado, es una salida
-        const newBalance = previousBalance.plus(movementAmount);
+        const newBalance = previousBalance.sub(newTotalAmount); // Restar el nuevo monto de la compra
 
         // Actualizar el CashMovement
         await tx.cashMovement.update({
           where: { id: existingCashMovement.id },
           data: {
-            amount: movementAmount,
+            amount: newTotalAmount, // Monto positivo - el tipo SALIDA ya indica que se resta
             previousBalance: previousBalance,
             newBalance: newBalance,
             paymentMethod: data.paymentMethod as any,
@@ -594,7 +592,12 @@ export const updatePurchase = async (purchaseId: string, data: PurchaseFormData,
         let runningBalance = newBalance;
         for (const movement of subsequentMovements) {
           const prevBalance = runningBalance;
-          runningBalance = prevBalance.plus(movement.amount);
+          // Aplicar correctamente según el tipo de movimiento
+          if (movement.type === CashMovementType.ENTRADA) {
+            runningBalance = prevBalance.add(movement.amount);
+          } else {
+            runningBalance = prevBalance.sub(movement.amount);
+          }
 
           await tx.cashMovement.update({
             where: { id: movement.id },
@@ -703,70 +706,30 @@ export const annulPurchase = async (purchaseId: string, userId: string): Promise
     });
 
     if (existingCashMovement) {
-      // Obtener el movimiento anterior a la compra original para calcular el previousBalance correcto
-      const previousMovement = await tx.cashMovement.findFirst({
-        where: {
-          date: {
-            lt: existingCashMovement.date
-          }
-        },
+      // Obtener el último movimiento de caja para calcular el balance actual
+      const lastMovement = await tx.cashMovement.findFirst({
         orderBy: { date: 'desc' }
       });
 
-      const previousBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
-      // Crear entrada positiva para revertir la salida original
-      const reversalAmount = existingCashMovement.amount.negated(); // Invertir el signo
-      const newBalance = previousBalance.plus(reversalAmount);
+      const previousBalance = lastMovement ? lastMovement.newBalance : new Prisma.Decimal(0);
+      // Al anular una compra, devolvemos el dinero (ENTRADA)
+      const newBalance = previousBalance.add(existingCashMovement.amount); // Sumar el monto original de la compra
 
-      // Usar una fecha ligeramente posterior a la compra original para mantener el orden cronológico
-      const anulacionDate = new Date(existingCashMovement.date.getTime() + 1000); // +1 segundo
-
-      // Crear movimiento de reversión
-      const anulacionMovement = await tx.cashMovement.create({
+      // Crear movimiento de reversión con fecha actual
+      await tx.cashMovement.create({
         data: {
           type: CashMovementType.ENTRADA,
-          amount: reversalAmount,
+          amount: existingCashMovement.amount, // Mismo monto que la compra original (positivo)
           category: 'ANULACION_COMPRA',
           description: `Anulación Compra ${purchaseId}`,
           paymentMethod: existingCashMovement.paymentMethod,
           referenceId: purchaseId,
-          date: anulacionDate,
+          date: new Date(),
           previousBalance: previousBalance,
           newBalance: newBalance,
           userId: userId
         }
       });
-
-      // Recalcular saldos de todos los movimientos posteriores a la compra original
-      // Excluir tanto la compra original como la anulación recién creada
-      const subsequentMovements = await tx.cashMovement.findMany({
-        where: {
-          date: {
-            gte: existingCashMovement.date // Incluir movimientos desde la fecha de compra
-          },
-          id: {
-            notIn: [existingCashMovement.id, anulacionMovement.id] // Excluir compra y anulación
-          }
-        },
-        orderBy: [
-          { date: 'asc' },
-          { createdAt: 'asc' }
-        ]
-      });
-
-      let runningBalance = newBalance;
-      for (const movement of subsequentMovements) {
-        const prevBalance = runningBalance;
-        runningBalance = prevBalance.plus(movement.amount);
-
-        await tx.cashMovement.update({
-          where: { id: movement.id },
-          data: {
-            previousBalance: prevBalance,
-            newBalance: runningBalance
-          }
-        });
-      }
     }
 
     // 8. Finalmente, anular la Compra
