@@ -75,6 +75,51 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
     - StockLot referencia Purchase y Supplier, con onDelete adecuados.
     - StockMovement referencia Product, StockLot y User.
 
+## Flujo Crítico: Crear Compra e Impacto en Inventario y Caja
+
+- Ruta y control:
+  - [purchases.routes.ts](apps/backend/src/api/routes/purchases.routes.ts:1) define POST y aplica auth/roles.
+  - [handleCreatePurchase()](apps/backend/src/controllers/purchases.controller.ts:33) valida con Zod y delega al servicio.
+- Servicio transaccional:
+  - [createPurchase()](apps/backend/src/services/purchases.service.ts:152) ejecuta lógica ACID con prisma.$transaction:
+    1) Crear la `Purchase` y los `PurchaseItem` asociados.
+    2) Para cada `PurchaseItem`, crear un `StockLot` para el nuevo lote de productos.
+    3) Crear un `StockMovement` de `ENTRADA` por `COMPRA` para registrar el ingreso al inventario.
+    4) Actualizar el `Product.stock` con la nueva cantidad.
+    5) **Crear un `CashMovement` de `SALIDA` por `COMPRA` para reflejar el egreso de dinero.**
+    6) Leer la compra completa con relaciones y mapear a DTO.
+
+### Diagrama de Secuencia: POST /api/v1/purchases
+
+```mermaid
+sequenceDiagram
+autonumber
+participant Client
+participant Frontend
+participant Backend
+participant Controller
+participant Service
+participant Prisma
+
+Client->>Frontend: Submit PurchaseForm
+Frontend->>Backend: POST /api/v1/purchases + JWT
+Backend->>Controller: Route match purchases.routes
+Controller->>Controller: Zod parse purchaseSchema
+Controller->>Service: createPurchase data userId
+Service->>Prisma: $transaction begin
+Prisma-->>Service: tx handle
+Service->>Prisma: create Purchase & PurchaseItem
+Service->>Prisma: create StockLot
+Service->>Prisma: create StockMovement
+Service->>Prisma: update Product stock
+Service->>Prisma: create CashMovement
+Service->>Prisma: read Purchase include relations
+Prisma-->>Service: Purchase full
+Service-->>Controller: Mapped Purchase DTO
+Controller-->>Frontend: 201 Created JSON
+Frontend-->>Client: Render success
+```
+
 ## Flujo Crítico: Crear Venta e Impacto en Inventario (FIFO)
 
 - Ruta y control:

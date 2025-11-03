@@ -89,24 +89,114 @@ export class CashService {
   }
 
   async updateManualMovement(id: string, data: UpdateManualMovementInput): Promise<CashMovementWithRelations> {
-    // Solo permitimos actualizar campos no financieros para no romper la cadena de saldos
-    const updateData: any = {
-      description: data.description,
-      category: data.category,
-    };
+    return await prisma.$transaction(async (tx) => {
+      // Obtener el movimiento actual
+      const currentMovement = await tx.cashMovement.findUnique({
+        where: { id },
+      });
 
-    // Solo incluir paymentMethod si se proporciona
-    if (data.paymentMethod !== undefined) {
-      updateData.paymentMethod = data.paymentMethod as PaymentMethod;
-    }
+      if (!currentMovement) {
+        throw new Error('Movimiento no encontrado');
+      }
 
-    const updatedMovement = await prisma.cashMovement.update({
-      where: { id },
-      data: updateData,
-      include: cashMovementInclude,
+      // Preparar datos de actualización
+      const updateData: any = {};
+
+      if (data.description !== undefined) {
+        updateData.description = data.description;
+      }
+
+      if (data.category !== undefined) {
+        updateData.category = data.category;
+      }
+
+      if (data.paymentMethod !== undefined) {
+        updateData.paymentMethod = data.paymentMethod as PaymentMethod;
+      }
+
+      if (data.date !== undefined) {
+        updateData.date = new Date(data.date);
+      }
+
+      if (data.type !== undefined) {
+        updateData.type = data.type as CashMovementType;
+      }
+
+      // Si se actualiza el monto o el tipo, recalcular saldos
+      if (data.amount !== undefined || data.type !== undefined) {
+        const newType = (data.type as CashMovementType | undefined) || currentMovement.type;
+        const newAmount = data.amount !== undefined ? new Prisma.Decimal(data.amount) : currentMovement.amount.abs();
+
+        // Calcular el monto del movimiento (positivo para entradas, negativo para salidas)
+        const movementAmount = newType === 'SALIDA'
+          ? newAmount.negated()
+          : newAmount;
+
+        updateData.amount = movementAmount;
+
+        // Obtener el saldo anterior (del movimiento inmediatamente anterior en fecha)
+        const previousMovement = await tx.cashMovement.findFirst({
+          where: {
+            date: {
+              lt: currentMovement.date,
+            },
+          },
+          orderBy: {
+            date: 'desc',
+          },
+        });
+
+        const previousBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
+        const newBalance = previousBalance.plus(movementAmount);
+
+        updateData.newBalance = newBalance;
+        updateData.previousBalance = previousBalance;
+
+        // Actualizar el movimiento
+        const updatedMovement = await tx.cashMovement.update({
+          where: { id },
+          data: updateData,
+          include: cashMovementInclude,
+        });
+
+        // Recalcular saldos de todos los movimientos posteriores
+        const subsequentMovements = await tx.cashMovement.findMany({
+          where: {
+            date: {
+              gt: currentMovement.date,
+            },
+          },
+          orderBy: {
+            date: 'asc',
+          },
+        });
+
+        let runningBalance = newBalance;
+        for (const movement of subsequentMovements) {
+          const prevBalance = runningBalance;
+          runningBalance = prevBalance.plus(movement.amount);
+
+          await tx.cashMovement.update({
+            where: { id: movement.id },
+            data: {
+              previousBalance: prevBalance,
+              newBalance: runningBalance,
+            },
+          });
+        }
+
+        return mapCashMovementFromPrisma(updatedMovement);
+      } else {
+        // Si no se actualiza el monto ni el tipo, solo actualizar los campos no financieros
+        const updatedMovement = await tx.cashMovement.update({
+          where: { id },
+          data: updateData,
+          include: cashMovementInclude,
+        });
+
+        return mapCashMovementFromPrisma(updatedMovement);
+      }
     });
-
-    return mapCashMovementFromPrisma(updatedMovement);
   }
 
   async deleteManualMovement(id: string): Promise<void> {

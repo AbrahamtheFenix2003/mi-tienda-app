@@ -1,5 +1,5 @@
 import prisma from '../utils/prisma.js';
-import { Prisma, StockMovementType, StockMovementSubType, LotStatus, PurchaseStatus } from '@prisma/client';
+import { Prisma, StockMovementType, StockMovementSubType, LotStatus, PurchaseStatus, CashMovementType } from '@prisma/client';
 import type { Purchase, PurchaseItem, Supplier, Product, PurchaseFormData } from '@mi-tienda/types';
 
 // Tipo para los datos de entrada al crear una compra (sin incluir campos calculados)
@@ -244,7 +244,34 @@ export const createPurchase = async (data: PurchaseFormData, userId: string): Pr
       });
     }
 
-    // c. Volver a buscar la compra completa para devolverla con todas las relaciones
+    // c. Crear movimiento de caja (SALIDA por compra)
+    // Obtener el último movimiento de caja para calcular el saldo anterior
+    const lastCashMovement = await tx.cashMovement.findFirst({
+      orderBy: { date: 'desc' }
+    });
+
+    // Calcular saldos
+    const previousBalance = lastCashMovement ? lastCashMovement.newBalance : new Prisma.Decimal(0);
+    const movementAmount = new Prisma.Decimal(totalAmount).negated(); // Negado, es una salida
+    const newBalance = previousBalance.plus(movementAmount);
+
+    // Crear el CashMovement
+    await tx.cashMovement.create({
+      data: {
+        type: CashMovementType.SALIDA,
+        amount: movementAmount,
+        category: 'COMPRA',
+        description: `Compra a Proveedor #${newPurchase.supplierId}`,
+        paymentMethod: newPurchase.paymentMethod as any,
+        referenceId: newPurchase.id, // ¡Clave! Vincula a la compra
+        date: newPurchase.purchaseDate,
+        previousBalance: previousBalance,
+        newBalance: newBalance,
+        userId: newPurchase.registeredById // El mismo usuario que registró la compra
+      }
+    });
+
+    // d. Volver a buscar la compra completa para devolverla con todas las relaciones
     const fullPurchase = await tx.purchase.findUniqueOrThrow({
       where: { id: newPurchase.id },
       include: {
@@ -514,7 +541,73 @@ export const updatePurchase = async (purchaseId: string, data: PurchaseFormData,
       },
     });
 
-    // PASO E: Devolver resultado completo
+    // PASO E: Actualizar movimiento de caja si el monto cambió
+    // Buscar el CashMovement asociado a esta compra
+    const existingCashMovement = await tx.cashMovement.findFirst({
+      where: { referenceId: purchaseId }
+    });
+
+    if (existingCashMovement) {
+      // Verificar si el monto cambió
+      const oldAmount = oldPurchase.totalAmount;
+      const amountChanged = !oldAmount.equals(newTotalAmount);
+
+      if (amountChanged) {
+        // Recalcular el movimiento de caja
+        const lastCashMovement = await tx.cashMovement.findFirst({
+          where: {
+            date: {
+              lt: existingCashMovement.date
+            }
+          },
+          orderBy: { date: 'desc' }
+        });
+
+        const previousBalance = lastCashMovement ? lastCashMovement.newBalance : new Prisma.Decimal(0);
+        const movementAmount = new Prisma.Decimal(newTotalAmount).negated(); // Negado, es una salida
+        const newBalance = previousBalance.plus(movementAmount);
+
+        // Actualizar el CashMovement
+        await tx.cashMovement.update({
+          where: { id: existingCashMovement.id },
+          data: {
+            amount: movementAmount,
+            previousBalance: previousBalance,
+            newBalance: newBalance,
+            paymentMethod: data.paymentMethod as any,
+            date: data.purchaseDate
+          }
+        });
+
+        // Recalcular saldos de movimientos posteriores
+        const subsequentMovements = await tx.cashMovement.findMany({
+          where: {
+            date: {
+              gt: existingCashMovement.date
+            }
+          },
+          orderBy: {
+            date: 'asc'
+          }
+        });
+
+        let runningBalance = newBalance;
+        for (const movement of subsequentMovements) {
+          const prevBalance = runningBalance;
+          runningBalance = prevBalance.plus(movement.amount);
+
+          await tx.cashMovement.update({
+            where: { id: movement.id },
+            data: {
+              previousBalance: prevBalance,
+              newBalance: runningBalance
+            }
+          });
+        }
+      }
+    }
+
+    // PASO F: Devolver resultado completo
     const fullPurchase = await tx.purchase.findUniqueOrThrow({
       where: { id: purchaseId },
       include: {
@@ -603,7 +696,72 @@ export const annulPurchase = async (purchaseId: string, userId: string): Promise
       });
     }
 
-    // 7. Finalmente, anular la Compra
+    // 7. Revertir movimiento de caja (crear entrada por anulación de compra)
+    // Buscar el movimiento de caja asociado a esta compra
+    const existingCashMovement = await tx.cashMovement.findFirst({
+      where: { referenceId: purchaseId }
+    });
+
+    if (existingCashMovement) {
+      // Obtener el saldo anterior (del movimiento inmediatamente anterior en fecha)
+      const previousMovement = await tx.cashMovement.findFirst({
+        where: {
+          date: {
+            lt: existingCashMovement.date
+          }
+        },
+        orderBy: { date: 'desc' }
+      });
+
+      const previousBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
+      // Crear entrada positiva para revertir la salida original
+      const reversalAmount = existingCashMovement.amount.negated(); // Invertir el signo
+      const newBalance = previousBalance.plus(reversalAmount);
+
+      // Crear movimiento de reversión
+      await tx.cashMovement.create({
+        data: {
+          type: CashMovementType.ENTRADA,
+          amount: reversalAmount,
+          category: 'ANULACION_COMPRA',
+          description: `Anulación Compra ${purchaseId}`,
+          paymentMethod: existingCashMovement.paymentMethod,
+          referenceId: purchaseId,
+          date: new Date(),
+          previousBalance: previousBalance,
+          newBalance: newBalance,
+          userId: userId
+        }
+      });
+
+      // Recalcular saldos de movimientos posteriores
+      const subsequentMovements = await tx.cashMovement.findMany({
+        where: {
+          date: {
+            gt: new Date()
+          }
+        },
+        orderBy: {
+          date: 'asc'
+        }
+      });
+
+      let runningBalance = newBalance;
+      for (const movement of subsequentMovements) {
+        const prevBalance = runningBalance;
+        runningBalance = prevBalance.plus(movement.amount);
+
+        await tx.cashMovement.update({
+          where: { id: movement.id },
+          data: {
+            previousBalance: prevBalance,
+            newBalance: runningBalance
+          }
+        });
+      }
+    }
+
+    // 8. Finalmente, anular la Compra
     const anulatedPurchase = await tx.purchase.update({
       where: { id: purchaseId },
       data: {
@@ -611,8 +769,8 @@ export const annulPurchase = async (purchaseId: string, userId: string): Promise
       },
       include: {
         supplier: true,
-        items: { 
-          include: { product: true } 
+        items: {
+          include: { product: true }
         },
       },
     });

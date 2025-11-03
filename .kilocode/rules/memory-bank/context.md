@@ -2,32 +2,22 @@
 
 ## Foco de Trabajo
 
-Se amplió el foco hacia el **Flujo de Caja**, añadiendo el endpoint de movimientos de caja en el backend y el tipo compartido correspondiente, manteniendo la base del módulo de **Gestión de Almacén** ya implementada.
+El foco principal ha sido la **integración completa del flujo de caja con el módulo de compras**. Esto asegura que las salidas de dinero por compras a proveedores se reflejen automáticamente en el estado de caja, manteniendo la consistencia financiera del sistema.
 
 ## Cambios Recientes
 
--   **Módulo de Almacén (Frontend)**: Se ha creado la página principal en `apps/frontend/app/(admin)/almacen/page.tsx`.
-    -   Implementa una interfaz de pestañas para "Lotes de Stock" y "Historial de Movimientos".
-    -   Utiliza TanStack Query para cargar los datos de ambos endpoints del backend de forma paralela.
-    -   Maneja los estados de carga, error y vacío para una mejor experiencia de usuario.
--   **Componentes de Tabla (Frontend)**: Se crearon los componentes `StockLotsTable` y `StockMovementsTable` para renderizar los datos en la página de "Almacén".
--   **Servicio de Inventario (Frontend)**: Se creó `apps/frontend/services/inventoryService.ts` con las funciones `fetchStockLots` y `fetchStockMovements` para comunicarse con la API.
--   **Tipos Compartidos**:
-    -   Se añadió `packages/types/src/inventory.ts` con las interfaces `StockLot` y `StockMovement`, y los enums correspondientes. Exportado en [`index.ts`](packages/types/src/index.ts:1).
-    -   Se añadió `packages/types/src/cash.ts` con el tipo `CashMovementWithRelations` basado en `CashMovement` e incluyendo `user` de forma tipada. Exportado en [`index.ts`](packages/types/src/index.ts:1).
--   **Endpoints de Inventario (Backend)**: Endpoints de solo lectura para consultar el estado del inventario:
-    -   `GET /api/v1/inventory/lots`: Obtiene todos los lotes de stock con sus relaciones (producto y proveedor).
-    -   `GET /api/v1/inventory/movements`: Obtiene todos los movimientos de stock con sus relaciones (producto, lote y usuario).
-    -   Ambos endpoints están protegidos por autenticación JWT y autorización por roles (SUPER_ADMIN, SUPER_VENDEDOR).
--   **Flujo de Caja (Backend)**:
-    -   Endpoint `GET /api/v1/cash/movements` implementado y protegido por autenticación JWT.
-    -   Lógica de negocio en [`cash.service.ts`](apps/backend/src/services/cash.service.ts:1), controlador en [`cash.controller.ts`](apps/backend/src/controllers/cash.controller.ts:1), rutas en [`cash.routes.ts`](apps/backend/src/api/routes/cash.routes.ts:1) y montaje en el router principal en [`api/index.ts`](apps/backend/src/api/index.ts:1).
-    -   Consulta Prisma con `include: { user: true }` y `orderBy: { createdAt: 'desc' }`. No se incluye relación a venta en el payload de caja.
+-   **Integración de Compras y Caja (Backend)**: Se ha modificado el servicio `purchases.service.ts` para que las operaciones de creación, edición y anulación de compras generen y actualicen movimientos de caja (`CashMovement`) de forma transaccional.
+    -   **Crear Compra**: Ahora genera un `CashMovement` de tipo `SALIDA` por el monto total de la compra.
+    -   **Editar Compra**: Si el monto total cambia, el `CashMovement` asociado se actualiza y se recalcula la cadena de saldos posteriores para mantener la consistencia.
+    -   **Anular Compra**: Genera un `CashMovement` de tipo `ENTRADA` para revertir la salida original, asegurando que el saldo de caja refleje la anulación.
+-   **Transaccionalidad Garantizada**: Todas las operaciones que afectan al inventario y a la caja se ejecutan dentro de una única transacción de Prisma (`prisma.$transaction`), asegurando la atomicidad.
+-   **Módulo de Almacén (Frontend)**: Se ha creado la página principal en `apps/frontend/app/(admin)/almacen/page.tsx`, que permite visualizar lotes de stock y el historial de movimientos.
+-   **Endpoints de Inventario (Backend)**: Se crearon endpoints de solo lectura para `GET /api/v1/inventory/lots` y `GET /api/v1/inventory/movements`, protegidos por autenticación y roles.
+-   **Flujo de Caja (Backend)**: Se implementó el endpoint `GET /api/v1/cash/movements` para consultar todos los movimientos de caja, incluyendo los generados por ventas y ahora también por compras.
 
 ## Próximos Pasos
 
-1.  **Frontend de Caja**: Implementar visualización de movimientos de caja en el panel admin:
-    -   Servicio HTTP, hook con React Query y tabla de listado.
-2.  **Edición de Compras**: Retomar la implementación de edición de compras.
-3.  **Reportería de Ventas**: Vistas para análisis por día, producto y vendedor.
-4.  **Tests Backend (opcional)**: Añadir pruebas para el servicio y controlador de caja.
+1.  **Frontend de Caja**: Implementar la visualización de movimientos de caja en el panel de administración, mostrando claramente los movimientos relacionados con ventas, compras y anulaciones.
+2.  **Reportería Financiera**: Desarrollar vistas que permitan analizar las entradas y salidas de dinero, filtrando por categorías como "Ventas" y "Compras".
+3.  **Tests de Integración (Backend)**: Añadir pruebas automatizadas para verificar que los flujos de compra y su impacto en la caja funcionan como se espera en diversos escenarios.
+4.  **Dashboard de Resumen**: Crear un componente en el dashboard principal que muestre un resumen del estado de caja actual, incluyendo el saldo y los últimos movimientos.
