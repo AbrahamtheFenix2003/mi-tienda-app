@@ -1,5 +1,5 @@
 # Principios de Desarrollo de Agentes
-Seguiremos principios de simplicidad: DRY (Don't Repeat Yourself), YAGNI (You Aren't Gonna Need It), KISS (Keep It Simple, Stupid). Nos esforzamos por escribir código claro y conciso que sea fácil de entender y mantener. Evitamos la complejidad innecesaria y nos centramos en soluciones directas y efectivas.
+Seguiremos principios de simplicidad: DRY (Don't Repeat Yourself). Nos esforzamos por escribir código claro y conciso que sea fácil de entender y mantener. Evitamos la complejidad innecesaria y nos centramos en soluciones directas y efectivas.
 ## Principios de Diseño de Software
 Adoptamos principios de diseño de software sólidos como SOLID, GRASP y patrones de diseño reconocidos. Estos principios nos ayudan a crear sistemas modulares, flexibles y escalables que pueden adaptarse a los cambios futuros sin comprometer la calidad del código.
 ## Estructura del Código

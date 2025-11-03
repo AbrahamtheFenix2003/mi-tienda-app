@@ -1,64 +1,200 @@
 'use client';
 
-import { Home, List, Loader2, AlertTriangle } from "lucide-react";
+import { useState, useMemo } from 'react';
+import { Loader2, AlertTriangle, Sparkles, Package } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCategories } from '@/services/categoryService';
+import { fetchProducts } from '@/services/productService';
+import { Product } from '@mi-tienda/types';
+
+import PublicHeader from '@/components/layout/PublicHeader';
+import CategorySidebar from '@/components/store/CategorySidebar';
+import ContactInfo from '@/components/store/ContactInfo';
+import ProductCard from '@/components/store/ProductCard';
+import ProductDetailModal from '@/components/store/ProductDetailModal';
 
 export default function HomePage() {
-  const { data: categories, isLoading, error } = useQuery({
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Fetch categories
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
   });
 
+  // Fetch products
+  const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery({
+    queryKey: ['products'],
+    queryFn: fetchProducts,
+  });
+
+  // Filter products by category and search query
+  const filteredProducts = useMemo(() => {
+    let filtered = products.filter(p => p.isActive);
+
+    // Filter by category
+    if (selectedCategoryId !== null) {
+      filtered = filtered.filter(p => p.categoryId === selectedCategoryId);
+    }
+
+    // Filter by search query
+    if (searchQuery.trim().length > 0) {
+      const searchTerm = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((product) => {
+        const matchesName = product.name.toLowerCase().includes(searchTerm);
+        const matchesCode = product.code.toLowerCase().includes(searchTerm);
+        const matchesCategory = product.category?.name.toLowerCase().includes(searchTerm);
+        const matchesTags = product.tags?.some(tag => tag.toLowerCase().includes(searchTerm));
+        return matchesName || matchesCode || matchesCategory || matchesTags;
+      });
+    }
+
+    return filtered;
+  }, [products, selectedCategoryId, searchQuery]);
+
+  // Get featured products (only if no filters applied)
+  const featuredProducts = useMemo(() => {
+    if (selectedCategoryId !== null || searchQuery.trim().length > 0) {
+      return [];
+    }
+    return products.filter(p => p.isActive && p.isFeatured).slice(0, 4);
+  }, [products, selectedCategoryId, searchQuery]);
+
+  // Handle product selection
+  const handleProductSelect = (product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProduct(null);
+  };
+
+  const isLoading = categoriesLoading || productsLoading;
+
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 md:p-12 lg:p-24 bg-gray-50">
-      {/* Encabezado */}
-      <div className="flex flex-col items-center gap-2 mb-12">
-        <Home className="h-10 w-10 text-rose-500" />
-        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900">
-          Tienda Pública
-        </h1>
-        <p className="text-base md:text-lg text-gray-600">
-          Frontend listo para conectar a la API
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Public Header */}
+      <PublicHeader
+        products={products.filter(p => p.isActive)}
+        onProductSelect={handleProductSelect}
+        onSearchChange={setSearchQuery}
+      />
 
-      {/* Sección de Categorías */}
-      <div className="w-full max-w-2xl bg-white p-6 rounded-lg shadow border">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-          <List className="h-5 w-5 mr-2 text-blue-500" />
-          Categorías desde la API:
-        </h2>
-
+      {/* Main Content */}
+  <div className="max-w-7xl mr-auto px-4 sm:px-6 lg:pl-4 lg:pr-8 py-8">
+        {/* Loading State */}
         {isLoading && (
-          <div className="flex justify-center items-center py-4 text-gray-500">
-            <Loader2 className="h-6 w-6 mr-2 animate-spin" />
-            Cargando categorías...
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-12 w-12 text-rose-500 animate-spin" />
           </div>
         )}
 
-        {error && (
-          <div className="flex flex-col items-center text-center py-4 text-red-600 bg-red-50 border border-red-200 rounded">
-            <AlertTriangle className="h-8 w-8 mb-2" />
-            <span className="font-semibold">Error al cargar categorías</span>
-            <span className="text-sm">{error instanceof Error ? error.message : String(error)}</span>
+        {/* Error State */}
+        {!isLoading && productsError && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <AlertTriangle className="h-16 w-16 text-red-500 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Error al cargar productos</h3>
+            <p className="text-gray-600">
+              {productsError instanceof Error ? productsError.message : 'Ocurrió un error inesperado'}
+            </p>
           </div>
         )}
 
-        {!isLoading && !error && categories && categories.length > 0 && (
-          <ul className="space-y-2 list-disc list-inside">
-            {categories.map((category) => (
-              <li key={category.id} className="text-gray-700">
-                {category.name} <span className="text-xs text-gray-400">(ID: {category.id})</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* Main Layout: Sidebar + Products */}
+        {!isLoading && !productsError && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Sidebar */}
+            <aside className="lg:col-span-1">
+              <div className="lg:sticky lg:top-24 space-y-6">
+                <CategorySidebar
+                  categories={categories}
+                  products={products}
+                  selectedCategoryId={selectedCategoryId}
+                  onCategorySelect={setSelectedCategoryId}
+                />
+                <ContactInfo />
+              </div>
+            </aside>
 
-        {!isLoading && !error && categories && categories.length === 0 && (
-          <p className="text-center text-gray-500 py-4">No hay categorías registradas en la API.</p>
+            {/* Products Section */}
+            <main className="lg:col-span-3 space-y-8">
+              {/* Featured Products Section */}
+              {featuredProducts.length > 0 && (
+                <section>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="h-6 w-6 text-rose-500" />
+                    <h2 className="text-2xl font-bold text-gray-900">Productos Destacados</h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {featuredProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        onClick={handleProductSelect}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* All Products Section */}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {selectedCategoryId !== null
+                      ? categories.find(c => c.id === selectedCategoryId)?.name || 'Productos'
+                      : searchQuery.trim().length > 0
+                      ? 'Resultados de búsqueda'
+                      : 'Todos los Productos'}
+                  </h2>
+                  <span className="text-sm text-gray-600">
+                    {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
+                  </span>
+                </div>
+
+                {/* Products Grid */}
+                {filteredProducts.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        onClick={handleProductSelect}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-lg border border-gray-200">
+                    <Package className="h-16 w-16 text-gray-300 mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {searchQuery.trim().length > 0
+                        ? 'No se encontraron productos'
+                        : 'No hay productos en esta categoría'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {searchQuery.trim().length > 0
+                        ? 'Intenta con otro término de búsqueda'
+                        : 'Selecciona otra categoría para ver productos'}
+                    </p>
+                  </div>
+                )}
+              </section>
+            </main>
+          </div>
         )}
       </div>
-    </main>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
+    </div>
   );
 }

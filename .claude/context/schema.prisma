@@ -105,7 +105,7 @@ model User {
 
 // 2. CATEGORÍA DE PRODUCTO
 model Category {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,7 +116,7 @@ model Category {
 
 // 3. PRODUCTO
 model Product {
-  id              String    @id @default(cuid())
+  id              Int       @id @default(autoincrement())
   name            String
   slug            String    @unique // Para URLs amigables
   description     String?   @db.Text
@@ -124,14 +124,13 @@ model Product {
   originalPrice   Decimal?  @db.Decimal(10, 2) // Precio antes de oferta
   acquisitionCost Decimal?  @db.Decimal(10, 2) // Costo promedio (actualizado por lotes) o fijo
   stock           Int       @default(0) // Stock total (calculado desde lotes)
-  stockMinimo     Int?      @default(5)  // Para alertas
-  stockMaximo     Int?      @default(100) // Para alertas
-  code            String?   @unique // SKU
+  code            String    @unique // SKU auto-generado (P-001, P-002, etc.) - Obligatorio
   imageUrl        String?
   imageUrl2       String?
   imageUrl3       String?
   imageUrl4       String?
   isFeatured      Boolean   @default(false)
+  isActive        Boolean   @default(true) // Soft delete: true = visible, false = eliminado
   tags            String[]  // Para búsqueda/filtros
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -140,7 +139,7 @@ model Product {
   stockInicial        Int?
   precioCompraInicial Decimal? @db.Decimal(10, 2)
 
-  categoryId String?
+  categoryId Int?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   // Relaciones inversas
@@ -190,7 +189,7 @@ model SaleItem {
   saleId    String
   sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
-  productId String
+  productId Int
   product   Product @relation(fields: [productId], references: [id]) // No eliminar producto si está en una venta
 
   @@unique([saleId, productId])
@@ -214,12 +213,13 @@ model Expense {
 
 // 7. PROVEEDOR
 model Supplier {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String   @unique
   contact   String?
   phone     String?
   email     String?  @unique
   address   String?
+  isActive  Boolean  @default(true) // Soft delete: true = visible, false = eliminado
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -238,7 +238,7 @@ model Purchase {
   totalAmount   Decimal      @db.Decimal(10, 2) // Total pagado al proveedor
   status        PurchaseStatus @default(REGISTRADA)
 
-  supplierId String
+  supplierId Int
   supplier   Supplier @relation(fields: [supplierId], references: [id])
 
   registeredById String
@@ -261,7 +261,7 @@ model PurchaseItem {
   purchaseId String
   purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
-  productId String
+  productId Int
   product   Product @relation(fields: [productId], references: [id])
 
   // Info del lote específico para este item (puede haber varios items del mismo producto en lotes diferentes)
@@ -288,13 +288,13 @@ model StockLot {
   status          LotStatus  @default(ACTIVO)
   isLegacy        Boolean    @default(false) // Para lotes creados desde stock inicial
 
-  productId String
+  productId Int
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   purchaseId String?
   purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull) // Compra que originó el lote
 
-  supplierId String?
+  supplierId Int?
   supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull) // Proveedor del lote
 
   createdAt DateTime @default(now())
@@ -316,7 +316,7 @@ model StockMovement {
   referenceId   String?              // ID de la Venta, Compra, Ajuste, etc.
   date          DateTime             @default(now())
 
-  productId String
+  productId Int
   product   Product @relation(fields: [productId], references: [id])
 
   loteId String? // ID del lote afectado (cuid de StockLot)
@@ -346,4 +346,3 @@ model CashMovement {
 
   createdAt DateTime @default(now())
 }
-
