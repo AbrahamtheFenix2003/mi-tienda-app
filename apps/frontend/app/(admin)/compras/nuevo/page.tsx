@@ -16,10 +16,12 @@ import { Product } from '@mi-tienda/types';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { NewPurchaseForm } from '../../../../components/admin/NewPurchaseForm';
+import { useInvalidateQueries, QUERY_KEYS } from '../../../../utils/queryInvalidation';
 
 const NuevaCompraPage: React.FC = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { invalidateAfterPurchase } = useInvalidateQueries();
 
   // Configuración del formulario
   const form = useForm<PurchaseFormData>({
@@ -35,13 +37,13 @@ const NuevaCompraPage: React.FC = () => {
 
   // Query para obtener proveedores
   const { data: suppliers, isLoading: isLoadingSuppliers, error: errorSuppliers } = useQuery<Supplier[]>({
-    queryKey: ['admin-suppliers'],
+    queryKey: QUERY_KEYS.SUPPLIERS,
     queryFn: fetchSuppliers,
   });
 
   // Query para obtener productos
   const { data: products, isLoading: isLoadingProducts, error: errorProducts } = useQuery<Product[]>({
-    queryKey: ['admin-products'],
+    queryKey: QUERY_KEYS.PRODUCTS,
     queryFn: fetchProducts,
   });
 
@@ -52,8 +54,9 @@ const NuevaCompraPage: React.FC = () => {
       console.log('Compra creada exitosamente:', data);
       // Mostrar alerta de éxito
       alert('¡Compra registrada exitosamente!');
-      // Invalidar la query de compras para refrescar la lista
-      queryClient.invalidateQueries({ queryKey: ['admin-purchases'] });
+      // Invalidar todas las queries relacionadas con compras
+      // Esto actualizará: compras, productos (stock), caja, dashboard
+      invalidateAfterPurchase();
       // Redirigir al listado
       router.push('/compras');
     },
@@ -91,8 +94,8 @@ const NuevaCompraPage: React.FC = () => {
           </p>
           <button
             onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ['admin-suppliers'] });
-              queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.SUPPLIERS });
+              queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PRODUCTS });
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >

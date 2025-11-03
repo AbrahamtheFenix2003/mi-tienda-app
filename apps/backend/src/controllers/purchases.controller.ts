@@ -31,25 +31,60 @@ export const handleGetPurchaseById = async (req: Request, res: Response) => {
 };
 
 export const handleCreatePurchase = async (req: AuthRequest, res: Response) => {
+  // Log the incoming request body for debugging
+  console.log("📦 Purchase creation request received:", JSON.stringify(req.body, null, 2));
+
   // Validar datos de entrada con Zod
   const validationResult = purchaseSchema.safeParse(req.body);
   if (!validationResult.success) {
+    console.error("❌ Validation failed:", validationResult.error.issues);
     return res.status(400).json({ message: "Datos inválidos", errors: validationResult.error.issues });
   }
+
+  console.log("✅ Validation passed:", JSON.stringify(validationResult.data, null, 2));
 
   // Obtener ID del usuario autenticado
   const userId = req.user?.id;
   if (!userId) {
+    console.error("❌ User not authenticated");
     return res.status(401).json({ message: "Usuario no autenticado." });
   }
 
+  console.log("👤 User ID:", userId);
+
   try {
     const newPurchase = await purchasesService.createPurchase(validationResult.data, userId);
+    console.log("✅ Purchase created successfully:", newPurchase.id);
     res.status(201).json(newPurchase);
   } catch (error: any) {
-    console.error("Error al crear la compra:", error);
+    console.error("❌ Error al crear la compra:", error);
+    console.error("Error stack:", error.stack);
+
+    // Handle specific database errors
+    if (error.code === 'P2003') {
+      // Check if it's a user foreign key error
+      if (error.meta?.constraint === 'Purchase_registeredById_fkey') {
+        return res.status(401).json({
+          message: 'Sesión inválida. Por favor, cierra sesión y vuelve a iniciar sesión.',
+          error: 'El usuario asociado a tu sesión no existe en la base de datos.'
+        });
+      }
+
+      return res.status(400).json({
+        message: 'Error de referencia: El proveedor o producto no existe',
+        error: error.message
+      });
+    }
+
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        message: 'Conflicto: Ya existe un registro con esos datos',
+        error: error.message
+      });
+    }
+
     // Podrías añadir manejo específico para errores de FK (producto/proveedor no existen) si es necesario
-    res.status(500).json({ message: 'Error interno al crear la compra', error: error.message });
+    res.status(500).json({ message: 'Error interno al crear la compra', error: error.message, details: error.stack });
   }
 };
 

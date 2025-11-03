@@ -10,6 +10,7 @@ import { DeleteProductModal } from '@/components/admin/DeleteProductModal';
 import { Loader2, AlertTriangle, PackagePlus } from 'lucide-react';
 import Link from 'next/link';
 import { Product, ProductFormData } from '@mi-tienda/types';
+import { useInvalidateQueries, QUERY_KEYS } from '@/utils/queryInvalidation';
 
 /**
 * Página de administración: Lista de productos
@@ -17,6 +18,7 @@ import { Product, ProductFormData } from '@mi-tienda/types';
 */
 export default function ProductosPage() {
   const queryClient = useQueryClient();
+  const { invalidateAfterProductChange } = useInvalidateQueries();
 
   // Estados para modales y producto seleccionado
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -25,12 +27,12 @@ export default function ProductosPage() {
 
   // Queries
   const { data: products, isLoading: isLoadingProducts, error: errorProducts } = useQuery({
-    queryKey: ['admin-products'],
+    queryKey: QUERY_KEYS.PRODUCTS,
     queryFn: fetchProducts,
   });
 
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
-    queryKey: ['categories'],
+    queryKey: QUERY_KEYS.CATEGORIES,
     queryFn: fetchCategories,
   });
 
@@ -40,7 +42,8 @@ export default function ProductosPage() {
     onSuccess: (updatedProduct: Product) => {
       // Actualizar el producto seleccionado con los nuevos datos
       setSelectedProduct(updatedProduct);
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      // Invalidar queries relacionadas con productos
+      invalidateAfterProductChange();
       // Removido el alert para mejor UX
     },
     onError: (error: unknown, variables) => {
@@ -56,7 +59,8 @@ export default function ProductosPage() {
     onSuccess: (updatedProduct: Product) => {
       // Actualizar el producto seleccionado con los nuevos datos
       setSelectedProduct(updatedProduct);
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      // Invalidar queries relacionadas con productos
+      invalidateAfterProductChange();
       // Removido el alert para mejor UX
     },
     onError: (error: unknown, variables) => {
@@ -71,7 +75,8 @@ export default function ProductosPage() {
     onSuccess: (updatedProduct: Product) => {
       setIsEditModalOpen(false);
       setSelectedProduct(null);
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      // Invalidar queries relacionadas con productos
+      invalidateAfterProductChange();
       alert(`Producto "${updatedProduct.name}" actualizado.`);
     },
     onError: (error: unknown) => {
@@ -84,7 +89,8 @@ export default function ProductosPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteProduct(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      // Invalidar queries relacionadas con productos
+      invalidateAfterProductChange();
       setIsDeleteModalOpen(false);
       setSelectedProduct(null);
       alert('Producto eliminado.');

@@ -16,9 +16,11 @@ import Link from 'next/link';
 import { PurchaseTable } from '../../../components/admin/PurchaseTable';
 import { AnnulPurchaseModal } from '../../../components/admin/AnnulPurchaseModal';
 import { PurchaseDetailsModal } from '../../../components/admin/PurchaseDetailsModal';
+import { useInvalidateQueries, QUERY_KEYS } from '../../../utils/queryInvalidation';
 
 const ComprasPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { invalidateAfterPurchase } = useInvalidateQueries();
 
   // Estados para el modal de anulación
   const [isAnnulModalOpen, setIsAnnulModalOpen] = useState(false);
@@ -29,7 +31,7 @@ const ComprasPage: React.FC = () => {
 
   // Obtener datos de compras
   const { data: purchases, isLoading, error } = useQuery<Purchase[]>({
-    queryKey: ['admin-purchases'],
+    queryKey: QUERY_KEYS.PURCHASES,
     queryFn: fetchPurchases,
   });
 
@@ -38,7 +40,9 @@ const ComprasPage: React.FC = () => {
     mutationFn: annulPurchase,
     onSuccess: () => {
       alert('Compra anulada correctamente.');
-      queryClient.invalidateQueries({ queryKey: ['admin-purchases'] });
+      // Invalidar todas las queries relacionadas con compras
+      // Esto actualizará: compras, productos (stock restaurado), caja, dashboard
+      invalidateAfterPurchase();
       handleCloseAnnulModal();
     },
     onError: (error: unknown) => {

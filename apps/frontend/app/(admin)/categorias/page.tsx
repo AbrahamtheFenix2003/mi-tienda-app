@@ -10,9 +10,11 @@ import { CategoryTable } from '@/components/admin/CategoryTable';
 import { CategoryEditModal } from '@/components/admin/CategoryEditModal';
 import { CategoryDeleteModal } from '@/components/admin/CategoryDeleteModal';
 import { Loader2, AlertTriangle, PlusCircle, FolderOpen } from 'lucide-react';
+import { useInvalidateQueries, QUERY_KEYS } from '@/utils/queryInvalidation';
 
 export default function CategoriasPage() {
   const queryClient = useQueryClient();
+  const { invalidateAfterCategoryChange } = useInvalidateQueries();
 
   // Estados para modales y categoría seleccionada
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -20,12 +22,12 @@ export default function CategoriasPage() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   // Query para obtener todas las categorías
-  const { 
-    data: categories, 
-    isLoading: isLoadingCategories, 
-    error: errorCategories 
+  const {
+    data: categories,
+    isLoading: isLoadingCategories,
+    error: errorCategories
   } = useQuery<Category[]>({
-    queryKey: ['admin-categories'],
+    queryKey: QUERY_KEYS.CATEGORIES,
     queryFn: fetchCategories,
   });
 
@@ -33,7 +35,9 @@ export default function CategoriasPage() {
   const createMutation = useMutation<Category, unknown, CategoryFormData>({
     mutationFn: createCategory,
     onSuccess: (newCategory: Category) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      // Invalidar queries relacionadas con categorías
+      // Esto actualizará: categorías, productos (productos usan categorías)
+      invalidateAfterCategoryChange();
       handleCloseEditModal();
       alert(`Categoría "${newCategory.name}" creada correctamente.`);
     },
@@ -48,7 +52,9 @@ export default function CategoriasPage() {
   const updateMutation = useMutation<Category, unknown, { id: number; data: Partial<CategoryFormData> }>({
     mutationFn: ({ id, data }) => updateCategory(id, data),
     onSuccess: (updatedCategory: Category) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      // Invalidar queries relacionadas con categorías
+      // Esto actualizará: categorías, productos (productos usan categorías)
+      invalidateAfterCategoryChange();
       handleCloseEditModal();
       alert(`Categoría "${updatedCategory.name}" actualizada.`);
     },
@@ -63,7 +69,9 @@ export default function CategoriasPage() {
   const deleteMutation = useMutation<void, unknown, number>({
     mutationFn: deleteCategory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      // Invalidar queries relacionadas con categorías
+      // Esto actualizará: categorías, productos (productos usan categorías)
+      invalidateAfterCategoryChange();
       handleCloseDeleteModal();
       alert('Categoría eliminada.');
     },

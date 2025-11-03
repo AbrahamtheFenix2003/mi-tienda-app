@@ -14,8 +14,15 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        refetchOnWindowFocus: false, // Desactivar refetch por defecto
-        staleTime: 60 * 1000, // 1 minuto de caché
+        refetchOnWindowFocus: false, // Desactivar refetch por defecto al enfocar ventana
+        refetchOnMount: true, // Refetch al montar componentes para tener datos frescos
+        refetchOnReconnect: true, // Refetch al reconectar internet
+        staleTime: 0, // Los datos son stale inmediatamente, permitiendo refetch más frecuente
+        gcTime: 5 * 60 * 1000, // Garbage collection después de 5 minutos (antes cacheTime)
+        retry: 1, // Reintentar solo 1 vez en caso de error
+      },
+      mutations: {
+        retry: 0, // No reintentar mutaciones automáticamente
       },
     },
   });

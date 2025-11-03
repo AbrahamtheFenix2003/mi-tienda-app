@@ -10,6 +10,7 @@ import { ManualMovementForm } from './ManualMovementForm';
 import { createManualMovement, updateManualMovement } from '../../services/cashService';
 import type { CashMovementWithRelations, CreateManualMovementInput, UpdateManualMovementInput } from '@mi-tienda/types';
 import { manualMovementSchema } from '@mi-tienda/types';
+import { useInvalidateQueries } from '../../utils/queryInvalidation';
 
 interface ManualMovementModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ interface ApiError {
 
 export const ManualMovementModal = ({ isOpen, onClose, movementToEdit }: ManualMovementModalProps) => {
   const queryClient = useQueryClient();
+  const { invalidateAfterCashMovement } = useInvalidateQueries();
   const [error, setError] = useState<string | null>(null);
 
   const isEditMode = Boolean(movementToEdit);
@@ -69,7 +71,9 @@ export const ManualMovementModal = ({ isOpen, onClose, movementToEdit }: ManualM
   const createMutation = useMutation({
     mutationFn: (data: CreateManualMovementInput) => createManualMovement(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cashMovements'] });
+      // Invalidar queries relacionadas con caja
+      // Esto actualizará: movimientos de caja, dashboard
+      invalidateAfterCashMovement();
       setError(null);
       onClose();
     },
@@ -87,7 +91,9 @@ export const ManualMovementModal = ({ isOpen, onClose, movementToEdit }: ManualM
     mutationFn: ({ id, data }: { id: string; data: UpdateManualMovementInput }) =>
       updateManualMovement(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cashMovements'] });
+      // Invalidar queries relacionadas con caja
+      // Esto actualizará: movimientos de caja, dashboard
+      invalidateAfterCashMovement();
       setError(null);
       onClose();
     },

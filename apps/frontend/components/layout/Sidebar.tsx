@@ -8,7 +8,7 @@ import {
   Building2,      // Icono para "Proveedores"
   ShoppingCart, // Icono para "Punto de ventas"
   AreaChart,      // Icono para "Reportes"
-  Calculator,     // Icono para "Rentabilidad"
+  // Calculator,     // Icono para "Rentabilidad" - Oculto temporalmente
   Warehouse,      // Icono para "Almacen"
   Truck,          // Icono para "Compras"
   Wallet,         // Icono para "Caja"
@@ -26,7 +26,7 @@ const navItems = [
   { href: '/proveedores', label: 'Proveedores', icon: Building2 },
   { href: '/punto-de-ventas', label: 'Punto de ventas', icon: ShoppingCart },
   { href: '/reportes', label: 'Reportes', icon: AreaChart },
-  { href: '/rentabilidad', label: 'Analisis de rentabilidad', icon: Calculator },
+  // { href: '/rentabilidad', label: 'Analisis de rentabilidad', icon: Calculator }, // Oculto temporalmente
   { href: '/almacen', label: 'Almacen', icon: Warehouse },
   { href: '/compras', label: 'Compras', icon: Truck },
   { href: '/caja', label: 'Caja', icon: Wallet },

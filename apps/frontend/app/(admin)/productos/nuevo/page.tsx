@@ -12,10 +12,12 @@ import { fetchCategories } from '@/services/categoryService';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useInvalidateQueries, QUERY_KEYS } from '@/utils/queryInvalidation';
 
 export default function NuevoProductoPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { invalidateAfterProductChange } = useInvalidateQueries();
 
   // --- Estado local para el producto recién creado y las imágenes pendientes ---
   const [createdProductId, setCreatedProductId] = useState<number | null>(null);
@@ -26,7 +28,7 @@ export default function NuevoProductoPage() {
     data: categories,
     isLoading: isLoadingCategories,
     error: errorCategories,
-  } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories });
+  } = useQuery({ queryKey: QUERY_KEYS.CATEGORIES, queryFn: fetchCategories });
 
   // --- Formulario ---
   const form = useForm<ProductFormData>({
@@ -83,7 +85,8 @@ export default function NuevoProductoPage() {
         alert(`Producto "${createdProduct.name}" creado con éxito!`);
       }
 
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      // Invalidar queries relacionadas con productos
+      invalidateAfterProductChange();
       router.push('/productos');
     },
     onError: (error: unknown) => {
