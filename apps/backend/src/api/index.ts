@@ -9,6 +9,7 @@ import salesRoutes from './routes/sales.routes.js';
 import inventoryRoutes from './routes/inventory.routes.js';
 import cashRoutes from './routes/cash.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 
 const router = Router();
 
@@ -41,5 +42,8 @@ router.use('/cash', cashRoutes);
 
 // Montar rutas de reportes
 router.use('/reports', reportsRoutes);
+
+// Montar rutas del dashboard
+router.use('/dashboard', dashboardRoutes);
  
 export default router;
