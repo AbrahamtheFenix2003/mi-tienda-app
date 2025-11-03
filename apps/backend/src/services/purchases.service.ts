@@ -703,7 +703,7 @@ export const annulPurchase = async (purchaseId: string, userId: string): Promise
     });
 
     if (existingCashMovement) {
-      // Obtener el saldo anterior (del movimiento inmediatamente anterior en fecha)
+      // Obtener el movimiento anterior a la compra original para calcular el previousBalance correcto
       const previousMovement = await tx.cashMovement.findFirst({
         where: {
           date: {
@@ -718,8 +718,11 @@ export const annulPurchase = async (purchaseId: string, userId: string): Promise
       const reversalAmount = existingCashMovement.amount.negated(); // Invertir el signo
       const newBalance = previousBalance.plus(reversalAmount);
 
+      // Usar una fecha ligeramente posterior a la compra original para mantener el orden cronológico
+      const anulacionDate = new Date(existingCashMovement.date.getTime() + 1000); // +1 segundo
+
       // Crear movimiento de reversión
-      await tx.cashMovement.create({
+      const anulacionMovement = await tx.cashMovement.create({
         data: {
           type: CashMovementType.ENTRADA,
           amount: reversalAmount,
@@ -727,23 +730,28 @@ export const annulPurchase = async (purchaseId: string, userId: string): Promise
           description: `Anulación Compra ${purchaseId}`,
           paymentMethod: existingCashMovement.paymentMethod,
           referenceId: purchaseId,
-          date: new Date(),
+          date: anulacionDate,
           previousBalance: previousBalance,
           newBalance: newBalance,
           userId: userId
         }
       });
 
-      // Recalcular saldos de movimientos posteriores
+      // Recalcular saldos de todos los movimientos posteriores a la compra original
+      // Excluir tanto la compra original como la anulación recién creada
       const subsequentMovements = await tx.cashMovement.findMany({
         where: {
           date: {
-            gt: new Date()
+            gte: existingCashMovement.date // Incluir movimientos desde la fecha de compra
+          },
+          id: {
+            notIn: [existingCashMovement.id, anulacionMovement.id] // Excluir compra y anulación
           }
         },
-        orderBy: {
-          date: 'asc'
-        }
+        orderBy: [
+          { date: 'asc' },
+          { createdAt: 'asc' }
+        ]
       });
 
       let runningBalance = newBalance;

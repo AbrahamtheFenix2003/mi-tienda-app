@@ -19,6 +19,8 @@ export default function CashMovementsTable({ data, onEdit }: CashMovementsTableP
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Tipo</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Descripción</th>
             <th className="px-4 py-2 text-right text-sm font-medium text-gray-700">Monto</th>
+            <th className="px-4 py-2 text-right text-sm font-medium text-gray-700">Saldo Anterior</th>
+            <th className="px-4 py-2 text-right text-sm font-medium text-gray-700">Nuevo Saldo</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Método pago</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Usuario</th>
             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Acciones</th>
@@ -49,6 +51,12 @@ export default function CashMovementsTable({ data, onEdit }: CashMovementsTableP
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.description ?? "-"}</td>
                 <td className="px-4 py-3 text-sm text-gray-700 text-right font-medium">{amountFormatted}</td>
+                <td className="px-4 py-3 text-sm text-gray-700 text-right">
+                  {new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(mov.previousBalance))}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-700 text-right font-medium">
+                  {new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(mov.newBalance))}
+                </td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.paymentMethod ?? "-"}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.user?.name ?? mov.user?.email ?? "-"}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">

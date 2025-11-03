@@ -7,6 +7,7 @@ import type { CashMovementWithRelations } from "@mi-tienda/types";
 import { getCashMovements } from "@/services/cashService";
 import CashMovementsTable from "@/components/admin/CashMovementsTable";
 import { ManualMovementModal } from "@/components/admin/ManualMovementModal";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 
 export default function CajaPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,6 +17,11 @@ export default function CajaPage() {
     queryKey: ["cashMovements"],
     queryFn: getCashMovements,
   });
+
+  // Lógica de Saldo: data ya está ordenado por fecha descendente desde el backend
+  const currentBalance = data && data.length > 0
+    ? data[0].newBalance
+    : 0;
 
   const handleEdit = (movement: CashMovementWithRelations) => {
     setMovementToEdit(movement);
@@ -29,6 +35,18 @@ export default function CajaPage() {
 
   return (
     <div className="space-y-6">
+      {/* Tarjeta de Saldo Actual */}
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Saldo Actual en Caja</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">
+            {new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(currentBalance))}
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Encabezado de la página */}
       <div className="flex items-center justify-between">
         <div className="flex items-center">
