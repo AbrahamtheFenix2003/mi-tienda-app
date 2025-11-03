@@ -3,8 +3,8 @@
 # ============================================
 FROM node:20-alpine AS base
 
-# Instalar dependencias del sistema necesarias para Prisma
-RUN apk add --no-cache openssl libc6-compat
+# Instalar dependencias del sistema necesarias para Prisma y PostgreSQL client
+RUN apk add --no-cache openssl libc6-compat postgresql-client
 
 # Establecer directorio de trabajo
 WORKDIR /app
@@ -96,7 +96,8 @@ USER node
 EXPOSE 8080
 
 # Health check para verificar que el servidor está respondiendo
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+# start-period largo para dar tiempo a migraciones y seed
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8080/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
 
 # Cambiar al directorio del backend

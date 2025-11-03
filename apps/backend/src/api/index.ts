@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import healthRoutes from './routes/health.routes.js';
 import categoryRoutes from './routes/categories.routes.js';
 import productRoutes from './routes/products.routes.js';
 import authRoutes from './routes/auth.routes.js';
@@ -8,9 +9,12 @@ import salesRoutes from './routes/sales.routes.js';
 import inventoryRoutes from './routes/inventory.routes.js';
 import cashRoutes from './routes/cash.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
- 
+
 const router = Router();
- 
+
+// Health check endpoint (no auth required)
+router.use('/health', healthRoutes);
+
 // <-- 2. MONTAR RUTAS DE AUTH -->
 router.use('/auth', authRoutes);
  
