@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import { Product } from '@mi-tienda/types';
 import { Modal } from '@/components/ui/Modal';
-import { Package, Tag, X, ChevronLeft, ChevronRight, ShoppingCart, Plus, Minus, Check } from 'lucide-react';
+import { Package, Tag, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { getAbsoluteImageUrl, isLocalUrl } from '@/lib/imageUtils';
-import { useCart } from '@/hooks/useCart';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -16,9 +15,6 @@ interface ProductDetailModalProps {
 
 export default function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [quantity, setQuantity] = useState(1);
-  const [showAddedMessage, setShowAddedMessage] = useState(false);
-  const { addToCart, isInCart, getItemQuantity } = useCart();
 
   if (!product) return null;
 
@@ -45,36 +41,8 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
 
   const handleClose = () => {
     setCurrentImageIndex(0);
-    setQuantity(1);
-    setShowAddedMessage(false);
     onClose();
   };
-
-  const handleAddToCart = () => {
-    if (hasStock) {
-      addToCart(product, quantity);
-      setShowAddedMessage(true);
-      setTimeout(() => {
-        setShowAddedMessage(false);
-        setQuantity(1);
-      }, 2000);
-    }
-  };
-
-  const incrementQuantity = () => {
-    if (quantity < product.stock) {
-      setQuantity(quantity + 1);
-    }
-  };
-
-  const decrementQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
-
-  const inCart = isInCart(product.id);
-  const cartQuantity = getItemQuantity(product.id);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={product.name} size="4xl">
@@ -187,12 +155,12 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
             <div className="border-t border-b border-gray-200 py-4">
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-bold text-rose-600">
-                  S/ {parseFloat(product.price).toFixed(2)}
+                  ${parseFloat(product.price).toFixed(2)}
                 </span>
                 {hasDiscount && (
                   <>
                     <span className="text-xl text-gray-400 line-through">
-                      S/ {parseFloat(product.originalPrice!).toFixed(2)}
+                      ${parseFloat(product.originalPrice!).toFixed(2)}
                     </span>
                     <span className="bg-green-500 text-white text-sm font-semibold px-2 py-1 rounded">
                       {Math.round((1 - parseFloat(product.price) / parseFloat(product.originalPrice!)) * 100)}% OFF
@@ -252,71 +220,6 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 <p className="text-rose-700 font-semibold text-center">
                   ⭐ Producto Destacado
                 </p>
-              </div>
-            )}
-
-            {/* Quantity Selector and Add to Cart */}
-            {hasStock && (
-              <div className="space-y-4">
-                {/* Quantity Selector */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Cantidad
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={decrementQuantity}
-                      disabled={quantity <= 1}
-                      className="flex items-center justify-center w-10 h-10 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed rounded-lg transition-colors"
-                      aria-label="Disminuir cantidad"
-                    >
-                      <Minus className="w-5 h-5" />
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      max={product.stock}
-                      value={quantity}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value) || 1;
-                        setQuantity(Math.min(Math.max(value, 1), product.stock));
-                      }}
-                      className="w-20 h-10 text-center border-2 border-gray-300 rounded-lg font-semibold text-lg focus:outline-none focus:border-rose-500"
-                    />
-                    <button
-                      onClick={incrementQuantity}
-                      disabled={quantity >= product.stock}
-                      className="flex items-center justify-center w-10 h-10 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed rounded-lg transition-colors"
-                      aria-label="Aumentar cantidad"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                    <span className="text-sm text-gray-600 ml-2">
-                      (Máx: {product.stock})
-                    </span>
-                  </div>
-                  {inCart && (
-                    <p className="text-sm text-blue-600 mt-2">
-                      Ya tienes {cartQuantity} en tu carrito
-                    </p>
-                  )}
-                </div>
-
-                {/* Add to Cart Button */}
-                {showAddedMessage ? (
-                  <div className="flex items-center justify-center gap-2 py-4 bg-green-100 text-green-700 rounded-lg font-medium text-lg">
-                    <Check className="w-6 h-6" />
-                    ¡Agregado al carrito!
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleAddToCart}
-                    className="w-full flex items-center justify-center gap-3 py-4 bg-rose-600 text-white font-bold text-lg rounded-lg hover:bg-rose-700 transition-colors focus:outline-none focus:ring-4 focus:ring-rose-300"
-                  >
-                    <ShoppingCart className="w-6 h-6" />
-                    Agregar al carrito
-                  </button>
-                )}
               </div>
             )}
           </div>
