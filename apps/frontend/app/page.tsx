@@ -12,12 +12,17 @@ import CategorySidebar from '@/components/store/CategorySidebar';
 import ContactInfo from '@/components/store/ContactInfo';
 import ProductCard from '@/components/store/ProductCard';
 import ProductDetailModal from '@/components/store/ProductDetailModal';
+import CartButton from '@/components/store/CartButton';
+import CartDrawer from '@/components/store/CartDrawer';
+import AdvisorSelectionModal from '@/components/store/AdvisorSelectionModal';
 
 export default function HomePage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAdvisorModalOpen, setIsAdvisorModalOpen] = useState(false);
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
@@ -74,6 +79,23 @@ export default function HomePage() {
     setSelectedProduct(null);
   };
 
+  const handleCartClick = () => {
+    setIsCartOpen(true);
+  };
+
+  const handleCartClose = () => {
+    setIsCartOpen(false);
+  };
+
+  const handleProceedToOrder = () => {
+    setIsCartOpen(false);
+    setIsAdvisorModalOpen(true);
+  };
+
+  const handleAdvisorModalClose = () => {
+    setIsAdvisorModalOpen(false);
+  };
+
   const isLoading = categoriesLoading || productsLoading;
 
   return (
@@ -83,6 +105,7 @@ export default function HomePage() {
         products={products.filter(p => p.isActive)}
         onProductSelect={handleProductSelect}
         onSearchChange={setSearchQuery}
+        onCartClick={handleCartClick}
       />
 
       {/* Main Content */}
@@ -194,6 +217,22 @@ export default function HomePage() {
         product={selectedProduct}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+      />
+
+      {/* Cart Floating Button */}
+      <CartButton onClick={handleCartClick} />
+
+      {/* Cart Drawer */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={handleCartClose}
+        onProceedToOrder={handleProceedToOrder}
+      />
+
+      {/* Advisor Selection Modal */}
+      <AdvisorSelectionModal
+        isOpen={isAdvisorModalOpen}
+        onClose={handleAdvisorModalClose}
       />
     </div>
   );
