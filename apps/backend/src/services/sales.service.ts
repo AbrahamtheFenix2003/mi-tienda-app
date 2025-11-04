@@ -121,6 +121,31 @@ export const salesService = {
 
   async createSale(data: SaleFormData, userId: string): Promise<Sale> {
     return await prisma.$transaction(async (tx) => {
+      // 0. Generar ID secuencial personalizado (VENTA-XXX)
+      const lastSale = await tx.sale.findFirst({
+        where: {
+          id: {
+            startsWith: 'VENTA-'
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        select: {
+          id: true
+        }
+      });
+
+      let nextNumber = 1;
+      if (lastSale && lastSale.id) {
+        const match = lastSale.id.match(/VENTA-(\d+)/);
+        if (match) {
+          nextNumber = parseInt(match[1]) + 1;
+        }
+      }
+
+      const saleId = `VENTA-${String(nextNumber).padStart(3, '0')}`;
+
       // 1. Validación de stock previo para todos los productos
       const productIds = data.items.map(item => item.productId);
       const products = await tx.product.findMany({
@@ -233,6 +258,7 @@ export const salesService = {
 
       const sale = await tx.sale.create({
         data: {
+          id: saleId, // ID personalizado (VENTA-XXX)
           customerName: data.customerName,
           customerPhone: data.customerPhone,
           paymentMethod: data.paymentMethod,
@@ -309,7 +335,7 @@ export const salesService = {
           type: 'ENTRADA',
           amount: totalAmount,
           category: 'Venta',
-          description: `Venta #${sale.id.substring(0, 8)} - Cliente: ${data.customerName}`,
+          description: `Venta #${sale.id} - Cliente: ${data.customerName}`,
           paymentMethod: data.paymentMethod,
           referenceId: sale.id,
           previousBalance: previousBalance,
@@ -374,7 +400,7 @@ export const salesService = {
             userId: userId,
             referenceId: saleId,
             date: new Date(),
-            notes: `Anulación de venta #${saleId.substring(0, 8)} - Devolución de ${Math.abs(movement.quantity)} unidades del lote ${movement.loteId}`
+            notes: `Anulación de venta #${saleId} - Devolución de ${Math.abs(movement.quantity)} unidades del lote ${movement.loteId}`
           }
         });
 
