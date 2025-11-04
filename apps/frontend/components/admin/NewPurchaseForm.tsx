@@ -26,6 +26,13 @@ interface NewPurchaseFormProps {
   products: Product[];
 }
 
+const getFieldClasses = (hasError?: boolean, extra?: string) => {
+  const base = `mt-1 sm:text-sm ${
+    hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''
+  }`.trim();
+  return extra ? `${base} ${extra}` : base;
+};
+
 export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
   form,
   onSubmit,
@@ -195,9 +202,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
               <select
                 id="supplierId"
                 {...register('supplierId', { valueAsNumber: true })}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.supplierId ? 'border-red-500' : 'border-gray-300'
-                } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+                className={getFieldClasses(Boolean(errors.supplierId))}
               >
                 <option value={0}>Seleccionar proveedor...</option>
                 {suppliers.map((supplier) => (
@@ -220,9 +225,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
                 id="purchaseDate"
                 type="date"
                 {...register('purchaseDate')}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.purchaseDate ? 'border-red-500' : 'border-gray-300'
-                } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+                className={getFieldClasses(Boolean(errors.purchaseDate))}
               />
               {errors.purchaseDate && (
                 <p className="mt-1 text-xs text-red-600">{errors.purchaseDate.message}</p>
@@ -237,9 +240,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
               <select
                 id="paymentMethod"
                 {...register('paymentMethod')}
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.paymentMethod ? 'border-red-500' : 'border-gray-300'
-                } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+                className={getFieldClasses(Boolean(errors.paymentMethod))}
               >
                 <option value="">Seleccionar método...</option>
                 <option value="EFECTIVO">Efectivo</option>
@@ -264,9 +265,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
                 rows={3}
                 {...register('notes')}
                 placeholder="Observaciones adicionales..."
-                className={`mt-1 block w-full rounded-md border ${
-                  errors.notes ? 'border-red-500' : 'border-gray-300'
-                } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+                className={getFieldClasses(Boolean(errors.notes))}
               />
               {errors.notes && (
                 <p className="mt-1 text-xs text-red-600">{errors.notes.message}</p>
@@ -309,7 +308,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
                       min="1"
                       value={quantity}
                       onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      className={getFieldClasses()}
                     />
                   </div>
 
@@ -325,7 +324,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
                       value={purchasePrice}
                       onChange={(e) => setPurchasePrice(e.target.value)}
                       placeholder="0.00"
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      className={getFieldClasses()}
                     />
                   </div>
                 </div>

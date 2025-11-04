@@ -169,7 +169,7 @@ export default function ReportsPage() {
             onChange={(event) =>
               setReportType(event.target.value as ReportType)
             }
-            className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-rose-500"
+            className="mt-1 sm:text-sm"
           >
             <option value="sales">Ventas</option>
             <option value="stock">Stock de productos</option>
@@ -184,7 +184,7 @@ export default function ReportsPage() {
                 type="date"
                 value={formatInputDate(dateRange.from)}
                 onChange={handleDateChange("from")}
-                className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-rose-500"
+                className="mt-1 sm:text-sm"
               />
             </label>
 
@@ -194,7 +194,7 @@ export default function ReportsPage() {
                 type="date"
                 value={formatInputDate(dateRange.to)}
                 onChange={handleDateChange("to")}
-                className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-rose-500"
+                className="mt-1 sm:text-sm"
               />
             </label>
           </div>
@@ -207,7 +207,7 @@ export default function ReportsPage() {
               <select
                 value={categoryFilter}
                 onChange={(event) => setCategoryFilter(event.target.value)}
-                className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-rose-500"
+                className="mt-1 sm:text-sm"
               >
                 <option value="all">Todas</option>
                 {categories?.map((category) => (
@@ -225,7 +225,7 @@ export default function ReportsPage() {
                 onChange={(event) =>
                   setStockFilter(event.target.value as StockFilter)
                 }
-                className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-rose-500"
+                className="mt-1 sm:text-sm"
               >
                 <option value="all">Todos</option>
                 <option value="with">Solo con stock</option>

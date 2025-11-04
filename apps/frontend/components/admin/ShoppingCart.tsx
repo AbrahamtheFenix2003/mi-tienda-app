@@ -83,7 +83,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
                             const newQuantity = parseInt(e.target.value) || 1;
                             onUpdateQuantity(index, Math.max(1, newQuantity));
                           }}
-                          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-16 px-2 py-1 text-xs focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
                         />
                       </div>
                       

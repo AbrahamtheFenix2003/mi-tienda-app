@@ -14,16 +14,14 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   id: string;
 }
 
-const FormInput = ({ label, error, id, ...props }: FormInputProps) => (
+const FormInput = ({ label, error, id, className = '', ...props }: FormInputProps) => (
   <div className="space-y-1">
     <label htmlFor={id} className="block text-sm font-medium text-gray-700">
       {label}
     </label>
     <input
       id={id}
-      className={`block w-full rounded-md border ${
-        error ? 'border-red-300' : 'border-gray-300'
-      } shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2`}
+      className={`mt-1 sm:text-sm ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''} ${className}`}
       {...props}
     />
     {error && <p className="text-sm text-red-600">{error}</p>}
@@ -37,16 +35,14 @@ interface FormSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> 
   children: React.ReactNode;
 }
 
-const FormSelect = ({ label, error, id, children, ...props }: FormSelectProps) => (
+const FormSelect = ({ label, error, id, children, className = '', ...props }: FormSelectProps) => (
   <div className="space-y-1">
     <label htmlFor={id} className="block text-sm font-medium text-gray-700">
       {label}
     </label>
     <select
       id={id}
-      className={`block w-full rounded-md border ${
-        error ? 'border-red-300' : 'border-gray-300'
-      } shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2`}
+      className={`mt-1 sm:text-sm ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''} ${className}`}
       {...props}
     >
       {children}
@@ -61,16 +57,14 @@ interface FormTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaEle
   id: string;
 }
 
-const FormTextarea = ({ label, error, id, ...props }: FormTextareaProps) => (
+const FormTextarea = ({ label, error, id, className = '', ...props }: FormTextareaProps) => (
   <div className="space-y-1">
     <label htmlFor={id} className="block text-sm font-medium text-gray-700">
       {label}
     </label>
     <textarea
       id={id}
-      className={`block w-full rounded-md border ${
-        error ? 'border-red-300' : 'border-gray-300'
-      } shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2`}
+      className={`mt-1 sm:text-sm ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''} ${className}`}
       {...props}
     />
     {error && <p className="text-sm text-red-600">{error}</p>}

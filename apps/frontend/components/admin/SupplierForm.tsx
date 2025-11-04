@@ -14,7 +14,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string | undefined;
 }
 
-const FormInput: React.FC<InputProps> = ({ label, id, error, ...props }) => (
+const FormInput: React.FC<InputProps> = ({ label, id, error, className = '', ...props }) => (
   <div>
     <label htmlFor={id} className="block text-sm font-medium text-gray-700">
       {label}
@@ -22,9 +22,7 @@ const FormInput: React.FC<InputProps> = ({ label, id, error, ...props }) => (
     <input
       id={id}
       {...props}
-      className={`mt-1 block w-full rounded-md border ${
-        error ? 'border-red-500' : 'border-gray-300'
-      } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+      className={`mt-1 sm:text-sm ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''} ${className}`}
     />
     {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
   </div>
@@ -35,7 +33,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   error?: string | undefined;
 }
 
-const FormTextarea: React.FC<TextareaProps> = ({ label, id, error, ...props }) => (
+const FormTextarea: React.FC<TextareaProps> = ({ label, id, error, className = '', ...props }) => (
   <div>
     <label htmlFor={id} className="block text-sm font-medium text-gray-700">
       {label}
@@ -43,9 +41,7 @@ const FormTextarea: React.FC<TextareaProps> = ({ label, id, error, ...props }) =
     <textarea
       id={id}
       {...props}
-      className={`mt-1 block w-full rounded-md border ${
-        error ? 'border-red-500' : 'border-gray-300'
-      } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+      className={`mt-1 sm:text-sm ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''} ${className}`}
     />
     {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
   </div>

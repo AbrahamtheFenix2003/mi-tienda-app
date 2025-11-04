@@ -87,9 +87,9 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
             }}
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
-            className={`block w-full rounded-md border ${
-              error ? 'border-red-500' : 'border-gray-300'
-            } px-3 py-2 pl-10 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm`}
+            className={`mt-1 sm:text-sm pl-10 pr-10 ${
+              error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''
+            }`}
           />
           
           {/* Icono de búsqueda */}

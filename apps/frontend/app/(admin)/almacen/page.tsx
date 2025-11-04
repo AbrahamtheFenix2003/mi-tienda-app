@@ -2,21 +2,23 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, AlertTriangle, Warehouse, Boxes, History } from 'lucide-react';
+import { Loader2, AlertTriangle, Warehouse, Boxes, History, PackageSearch } from 'lucide-react';
 import { fetchStockLots, fetchStockMovements } from '@/services/inventoryService';
-import { StockLot, StockMovement } from '@mi-tienda/types';
+import { fetchProducts } from '@/services/productService';
+import { StockLot, StockMovement, Product } from '@mi-tienda/types';
 import { StockLotsTable } from '@/components/admin/StockLotsTable';
 import StockMovementsTable from '@/components/admin/StockMovementsTable';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
 function AlmacenPage() {
-  const [activeTab, setActiveTab] = useState<'lotes' | 'movimientos'>('lotes');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'lotes' | 'movimientos'>('lotes');
 
   // Query de Lotes
   const { 
     data: lotsData, 
     isLoading: isLoadingLots, 
     error: errorLots 
-  } = useQuery({
+  } = useQuery<StockLot[]>({
     queryKey: ['admin-stock-lots'],
     queryFn: fetchStockLots,
   });
@@ -26,10 +28,109 @@ function AlmacenPage() {
     data: movementsData, 
     isLoading: isLoadingMovements, 
     error: errorMovements 
-  } = useQuery({
+  } = useQuery<StockMovement[]>({
     queryKey: ['admin-stock-movements'],
     queryFn: fetchStockMovements,
   });
+
+  const {
+    data: productsData,
+    isLoading: isLoadingProducts,
+    error: errorProducts,
+  } = useQuery<Product[]>({
+    queryKey: ['admin-products-inventory'],
+    queryFn: fetchProducts,
+  });
+
+  const renderSummaryContent = () => {
+    if (isLoadingProducts) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <p className="mt-2 text-gray-600">Cargando resumen de inventario...</p>
+        </div>
+      );
+    }
+
+    if (errorProducts) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-red-600">
+          <AlertTriangle className="w-8 h-8" />
+          <p className="mt-2 font-semibold">Error al cargar los productos</p>
+          <p className="text-sm text-gray-500">
+            {errorProducts instanceof Error ? errorProducts.message : 'Ha ocurrido un error inesperado'}
+          </p>
+        </div>
+      );
+    }
+
+    if (!productsData || productsData.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <PackageSearch className="w-12 h-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No hay productos registrados</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Crea productos desde la sección de Productos para ver su inventario aquí.
+          </p>
+        </div>
+      );
+    }
+
+    const totalProducts = productsData.length;
+    const totalStock = productsData.reduce((acc, product) => acc + (product.stock ?? 0), 0);
+
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <CardTitle>Total de Productos</CardTitle>
+              <Boxes className="w-6 h-6 text-rose-500" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-semibold text-gray-900">{totalProducts}</p>
+              <p className="mt-1 text-sm text-gray-500">Productos activos en el catálogo</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <CardTitle>Unidades en Inventario</CardTitle>
+              <Warehouse className="w-6 h-6 text-rose-500" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-semibold text-gray-900">{totalStock}</p>
+              <p className="mt-1 text-sm text-gray-500">Suma de stock disponible</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Detalle por producto</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {productsData.map((product) => (
+              <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">{product.name}</CardTitle>
+                  <p className="text-sm text-gray-500">Código: {product.code}</p>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm text-gray-500">Stock disponible</span>
+                    <span className="text-2xl font-semibold text-gray-900">{product.stock}</span>
+                  </div>
+                  {product.category?.name && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      Categoría: <span className="text-gray-700">{product.category.name}</span>
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Contenido de la pestaña "Lotes"
   const renderLotsContent = () => {
@@ -137,6 +238,17 @@ function AlmacenPage() {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
+            onClick={() => setActiveTab('resumen')}
+            className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'resumen'
+                ? 'border-rose-500 text-rose-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <PackageSearch className="w-4 h-4 mr-2" />
+            Resumen de Inventario
+          </button>
+          <button
             onClick={() => setActiveTab('lotes')}
             className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'lotes'
@@ -163,6 +275,7 @@ function AlmacenPage() {
 
       {/* Contenido de Pestañas */}
       <div className="mt-6">
+        {activeTab === 'resumen' && renderSummaryContent()}
         {activeTab === 'lotes' && renderLotsContent()}
         {activeTab === 'movimientos' && renderMovementsContent()}
       </div>

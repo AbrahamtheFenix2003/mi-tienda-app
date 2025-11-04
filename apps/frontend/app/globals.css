@@ -24,3 +24,33 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+::selection {
+  background-color: #fecdd3;
+  color: #111827;
+}
+
+@layer base {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  textarea,
+  select {
+    @apply block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-gray-900 shadow-sm transition duration-150 ease-in-out;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color'])::placeholder,
+  textarea::placeholder {
+    @apply text-gray-400;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):focus,
+  textarea:focus,
+  select:focus {
+    @apply border-rose-500 bg-white ring-4 ring-rose-100 outline-none;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):disabled,
+  textarea:disabled,
+  select:disabled {
+    @apply cursor-not-allowed bg-gray-100 text-gray-500;
+  }
+}
