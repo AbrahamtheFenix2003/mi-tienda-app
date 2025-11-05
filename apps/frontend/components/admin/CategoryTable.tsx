@@ -3,19 +3,20 @@
 'use client';
 
 import { Category } from '@mi-tienda/types';
-import { Edit, Trash2, FolderOpen } from 'lucide-react';
+import { Edit, Trash2, FolderOpen, Eye } from 'lucide-react';
 
 interface CategoryTableProps {
   categories: Category[];
   onEdit: (category: Category) => void;
   onDelete: (category: Category) => void;
+  onView?: (category: Category) => void;
 }
 
 /**
  * Componente de UI "tonto" (dumb component).
  * Muestra una lista de categorías en una tabla.
  */
-export const CategoryTable = ({ categories, onEdit, onDelete }: CategoryTableProps) => {
+export const CategoryTable = ({ categories, onEdit, onDelete, onView }: CategoryTableProps) => {
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
       <div className="overflow-x-auto">
@@ -44,6 +45,15 @@ export const CategoryTable = ({ categories, onEdit, onDelete }: CategoryTablePro
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                  {onView && (
+                    <button
+                      onClick={() => onView(category)}
+                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+                      title="Ver Productos"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => onEdit(category)}
                     className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full transition-colors"

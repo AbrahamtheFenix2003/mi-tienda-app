@@ -1,7 +1,7 @@
 // services/categoryService.ts
 
 import api from './api';
-import { Category, CategoryFormData } from '@mi-tienda/types';
+import { Category, CategoryFormData, Product } from '@mi-tienda/types';
 
 /**
  * Obtiene todas las categorías desde la API.
@@ -62,6 +62,21 @@ export const deleteCategory = async (id: number): Promise<void> => {
     await api.delete(`/categories/${id}`);
   } catch (error) {
     console.error(`Error deleting category ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene todos los productos asociados a una categoría específica.
+ * @param categoryId - El ID de la categoría.
+ * @returns Promise<Product[]> - Lista de productos de la categoría.
+ */
+export const getCategoryProducts = async (categoryId: number): Promise<Product[]> => {
+  try {
+    const response = await api.get<Product[]>(`/categories/${categoryId}/products`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching products for category ${categoryId}:`, error);
     throw error;
   }
 };

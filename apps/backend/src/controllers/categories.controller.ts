@@ -76,3 +76,18 @@ export const handleGetCategoryById = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al obtener la categoría', error });
   }
 };
+
+export const handleGetCategoryProducts = async (req: Request, res: Response) => {
+  const categoryId = parseInt(req.params.id, 10);
+
+  if (isNaN(categoryId)) {
+    return res.status(400).json({ message: 'ID de categoría inválido' });
+  }
+
+  try {
+    const products = await categoryService.getCategoryProducts(categoryId);
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener productos de la categoría', error });
+  }
+};

@@ -20,6 +20,18 @@ export type DailySale = {
   total: number;
 };
 
+export type SalesByCategory = {
+  category: string;
+  total: number;
+  count: number;
+};
+
+export type SalesByDatePeriod = {
+  date: string;
+  total: number;
+  count: number;
+};
+
 export type DashboardStats = {
   totals: {
     totalSales: Prisma.Decimal;
@@ -28,4 +40,9 @@ export type DashboardStats = {
     totalProducts: number;
   };
   recentSales: DailySale[]; // Para el gráfico de los últimos 7 días
+};
+
+export type DashboardChartsData = {
+  salesByDate: SalesByDatePeriod[];
+  salesByCategory: SalesByCategory[];
 };

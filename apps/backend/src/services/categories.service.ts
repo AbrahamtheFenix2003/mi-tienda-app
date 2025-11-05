@@ -55,3 +55,17 @@ export const getCategoryById = async (id: number): Promise<Category | null> => {
     where: { id },
   });
 };
+
+/**
+ * Obtiene todos los productos asociados a una categoría.
+ * @param categoryId El ID de la categoría.
+ */
+export const getCategoryProducts = async (categoryId: number) => {
+  return prisma.product.findMany({
+    where: { categoryId },
+    include: {
+      category: true,
+    },
+    orderBy: { name: 'asc' },
+  });
+};

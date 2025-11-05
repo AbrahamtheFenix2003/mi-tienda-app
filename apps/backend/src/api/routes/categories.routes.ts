@@ -9,6 +9,9 @@ const SUPER_ADMIN_ONLY: Role[] = ['SUPER_ADMIN'];
 // GET /api/v1/categories
 router.get('/', categoryController.handleGetAllCategories);
 
+// GET /api/v1/categories/:id/products
+router.get('/:id/products', categoryController.handleGetCategoryProducts);
+
 // GET /api/v1/categories/:id
 router.get('/:id', categoryController.handleGetCategoryById);
 

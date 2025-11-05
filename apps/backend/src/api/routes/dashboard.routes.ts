@@ -11,4 +11,8 @@ const controller = new DashboardController();
 // Solo usuarios autenticados pueden acceder
 router.get('/stats', authenticateToken, controller.handleGetDashboardStats);
 
+// Ruta para obtener datos de gráficos con filtro de período
+// Query params: startDate (ISO), endDate (ISO)
+router.get('/charts', authenticateToken, controller.handleGetChartsData);
+
 export default router;

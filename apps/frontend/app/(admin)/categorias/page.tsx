@@ -4,11 +4,12 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchCategories, createCategory, updateCategory, deleteCategory } from '@/services/categoryService';
-import { Category, CategoryFormData } from '@mi-tienda/types';
+import { fetchCategories, createCategory, updateCategory, deleteCategory, getCategoryProducts } from '@/services/categoryService';
+import { Category, CategoryFormData, Product } from '@mi-tienda/types';
 import { CategoryTable } from '@/components/admin/CategoryTable';
 import { CategoryEditModal } from '@/components/admin/CategoryEditModal';
 import { CategoryDeleteModal } from '@/components/admin/CategoryDeleteModal';
+import { CategoryDetailsModal } from '@/components/admin/CategoryDetailsModal';
 import { Loader2, AlertTriangle, PlusCircle, FolderOpen } from 'lucide-react';
 import { useInvalidateQueries, QUERY_KEYS } from '@/utils/queryInvalidation';
 
@@ -19,7 +20,10 @@ export default function CategoriasPage() {
   // Estados para modales y categoría seleccionada
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [categoryProducts, setCategoryProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   // Query para obtener todas las categorías
   const {
@@ -124,6 +128,22 @@ export default function CategoriasPage() {
     deleteMutation.mutate(selectedCategory.id);
   };
 
+  // Handler para ver detalles de la categoría
+  const handleViewDetails = async (category: Category) => {
+    setSelectedCategory(category);
+    setIsDetailsModalOpen(true);
+    setIsLoadingProducts(true);
+    try {
+      const products = await getCategoryProducts(category.id);
+      setCategoryProducts(products);
+    } catch (error) {
+      console.error('Error fetching category products:', error);
+      setCategoryProducts([]);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
   // Renderizar contenido según el estado
   const renderContent = () => {
     if (isLoadingCategories) {
@@ -165,6 +185,7 @@ export default function CategoriasPage() {
       return (
         <CategoryTable
           categories={categories}
+          onView={handleViewDetails}
           onEdit={handleOpenEditModal}
           onDelete={handleOpenDeleteModal}
         />
@@ -203,13 +224,27 @@ export default function CategoriasPage() {
         categoryToEdit={selectedCategory}
       />
 
-      <CategoryDeleteModal 
+      <CategoryDeleteModal
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
         isLoading={deleteMutation.isPending}
         categoryName={selectedCategory?.name}
       />
+
+      {isDetailsModalOpen && selectedCategory && (
+        <CategoryDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedCategory(null);
+            setCategoryProducts([]);
+          }}
+          category={selectedCategory}
+          products={categoryProducts}
+          isLoading={isLoadingProducts}
+        />
+      )}
     </div>
   );
 }

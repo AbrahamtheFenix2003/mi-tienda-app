@@ -2,10 +2,14 @@
 
 "use client";
 
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getDashboardStats } from '@/services/dashboardService';
+import { getDashboardStats, getDashboardChartsData } from '@/services/dashboardService';
 import { StatCard } from '@/components/admin/dashboard/StatCard';
 import { SalesChart } from '@/components/admin/dashboard/SalesChart';
+import { LineChartSales } from '@/components/admin/dashboard/LineChartSales';
+import { DoughnutChartCategories } from '@/components/admin/dashboard/DoughnutChartCategories';
+import { DateRangeSelector } from '@/components/admin/dashboard/DateRangeSelector';
 import {
   DollarSign,
   TrendingUp,
@@ -15,11 +19,32 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { QUERY_KEYS } from '@/utils/queryInvalidation';
+import { DashboardChartsData } from '@mi-tienda/types';
 
 export default function DashboardPage() {
+  const [chartsDateRange, setChartsDateRange] = useState<{ startDate: string; endDate: string } | null>(null);
+
   const { data, isLoading, isError } = useQuery({
     queryKey: QUERY_KEYS.DASHBOARD_STATS,
     queryFn: getDashboardStats,
+  });
+
+  // Query para los gráficos con filtro de período
+  const { data: chartsData, isLoading: chartsLoading } = useQuery({
+    queryKey: ['dashboard', 'charts', chartsDateRange?.startDate, chartsDateRange?.endDate],
+    queryFn: () => {
+      if (!chartsDateRange) {
+        // Valor por defecto: últimos 30 días
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        return getDashboardChartsData(
+          thirtyDaysAgo.toISOString().split('T')[0],
+          today.toISOString().split('T')[0]
+        );
+      }
+      return getDashboardChartsData(chartsDateRange.startDate, chartsDateRange.endDate);
+    },
+    enabled: true, // Siempre habilitado
   });
 
   if (isLoading) {
@@ -81,7 +106,30 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Sales Chart */}
+      {/* Date Range Selector para gráficos */}
+      <DateRangeSelector
+        onDateRangeChange={(startDate, endDate) => {
+          setChartsDateRange({ startDate, endDate });
+        }}
+        isLoading={chartsLoading}
+      />
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Line Chart - Evolución de Ventas */}
+        <LineChartSales
+          data={chartsData?.salesByDate || []}
+          isLoading={chartsLoading}
+        />
+
+        {/* Doughnut Chart - Distribución por Categoría */}
+        <DoughnutChartCategories
+          data={chartsData?.salesByCategory || []}
+          isLoading={chartsLoading}
+        />
+      </div>
+
+      {/* Sales Chart - Últimos 7 días */}
       <SalesChart data={data.recentSales} />
     </div>
   );
