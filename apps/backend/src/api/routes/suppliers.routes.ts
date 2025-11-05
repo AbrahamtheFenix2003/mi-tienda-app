@@ -11,6 +11,7 @@ router.use(authorizeRole(allowedRoles));
 
 // CRUD
 router.get('/', supplierController.handleGetAllSuppliers);
+router.get('/:id/purchases', supplierController.handleGetSupplierPurchases);
 router.get('/:id', supplierController.handleGetSupplierById);
 router.post('/', supplierController.handleCreateSupplier);
 router.put('/:id', supplierController.handleUpdateSupplier);

@@ -104,3 +104,18 @@ export const handleRestoreSupplier = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al reactivar proveedor', error });
   }
 };
+
+export const handleGetSupplierPurchases = async (req: Request, res: Response) => {
+  const supplierId = parseInt(req.params.id, 10);
+
+  if (isNaN(supplierId)) {
+    return res.status(400).json({ message: 'ID de proveedor inválido' });
+  }
+
+  try {
+    const purchases = await supplierService.getSupplierPurchases(supplierId);
+    res.status(200).json(purchases);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener compras del proveedor', error });
+  }
+};

@@ -3,19 +3,20 @@
 'use client';
 
 import { Supplier } from '@mi-tienda/types';
-import { Edit, Trash2, Building2 } from 'lucide-react';
+import { Edit, Trash2, Building2, Eye } from 'lucide-react';
 
 interface SupplierTableProps {
   suppliers: Supplier[];
   onEdit: (supplier: Supplier) => void;
   onDelete: (supplier: Supplier) => void;
+  onView?: (supplier: Supplier) => void;
 }
 
 /**
  * Componente de UI "tonto" (dumb component).
  * Muestra una lista de proveedores en una tabla.
  */
-export const SupplierTable = ({ suppliers, onEdit, onDelete }: SupplierTableProps) => {
+export const SupplierTable = ({ suppliers, onEdit, onDelete, onView }: SupplierTableProps) => {
   
   // Función para formatear campos opcionales
   const formatOptionalField = (value: string | null | undefined) => {
@@ -85,6 +86,15 @@ export const SupplierTable = ({ suppliers, onEdit, onDelete }: SupplierTableProp
                   
                   {/* Acciones */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                    {onView && (
+                      <button
+                        onClick={() => onView(supplier)}
+                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+                        title="Ver Detalles"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => onEdit(supplier)}
                       className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full transition-colors"

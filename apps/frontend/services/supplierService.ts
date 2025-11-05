@@ -65,3 +65,18 @@ export const deleteSupplier = async (id: number): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Obtiene todas las compras asociadas a un proveedor específico.
+ * @param supplierId - El ID del proveedor.
+ * @returns Promise<Purchase[]> - Lista de compras del proveedor.
+ */
+export const getSupplierPurchases = async (supplierId: number) => {
+  try {
+    const response = await api.get(`/suppliers/${supplierId}/purchases`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching purchases for supplier ${supplierId}:`, error);
+    throw error;
+  }
+};

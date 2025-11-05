@@ -2,14 +2,15 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchProducts, updateProduct, deleteProduct, uploadProductImageByIndex, deleteProductImageByIndex } from '@/services/productService';
+import { fetchProducts, updateProduct, deleteProduct, uploadProductImageByIndex, deleteProductImageByIndex, getProductStockLots } from '@/services/productService';
 import { fetchCategories } from '@/services/categoryService';
 import { ProductTable } from '@/components/admin/ProductTable';
 import { EditProductModal } from '@/components/admin/EditProductModal';
 import { DeleteProductModal } from '@/components/admin/DeleteProductModal';
+import { ProductDetailsModal } from '@/components/admin/ProductDetailsModal';
 import { Loader2, AlertTriangle, PackagePlus } from 'lucide-react';
 import Link from 'next/link';
-import { Product, ProductFormData } from '@mi-tienda/types';
+import { Product, ProductFormData, StockLot } from '@mi-tienda/types';
 import { useInvalidateQueries, QUERY_KEYS } from '@/utils/queryInvalidation';
 
 /**
@@ -23,8 +24,11 @@ export default function ProductosPage() {
   // Estados para modales y producto seleccionado
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+  const [stockLots, setStockLots] = useState<StockLot[]>([]);
+  const [isLoadingLots, setIsLoadingLots] = useState(false);
 
   // Queries
   const { data: products, isLoading: isLoadingProducts, error: errorProducts } = useQuery({
@@ -143,7 +147,14 @@ export default function ProductosPage() {
         );
       }
 
-      return <ProductTable products={products} onEdit={(p: Product) => { setSelectedProduct(p); setIsEditModalOpen(true); }} onDelete={(p: Product) => { setSelectedProduct(p); setIsDeleteModalOpen(true); }} />;
+      return (
+        <ProductTable
+          products={products}
+          onView={handleViewDetails}
+          onEdit={(p: Product) => { setSelectedProduct(p); setIsEditModalOpen(true); }}
+          onDelete={(p: Product) => { setSelectedProduct(p); setIsDeleteModalOpen(true); }}
+        />
+      );
     }
 
     return null;
@@ -169,6 +180,21 @@ export default function ProductosPage() {
    if (!selectedProduct) return;
    // Eliminar inmediatamente la imagen cuando se hace clic en el botón X
    deleteImageByIndexMutation.mutate({ productId: selectedProduct.id, index });
+ };
+
+ const handleViewDetails = async (product: Product) => {
+   setSelectedProduct(product);
+   setIsDetailsModalOpen(true);
+   setIsLoadingLots(true);
+   try {
+     const lots = await getProductStockLots(product.id);
+     setStockLots(lots);
+   } catch (error) {
+     console.error('Error fetching stock lots:', error);
+     setStockLots([]);
+   } finally {
+     setIsLoadingLots(false);
+   }
  };
 
  return (
@@ -210,6 +236,18 @@ export default function ProductosPage() {
        onConfirm={handleConfirmDelete}
        isLoading={deleteMutation.isPending}
        productName={selectedProduct?.name}
+     />
+
+     <ProductDetailsModal
+       isOpen={isDetailsModalOpen}
+       onClose={() => {
+         setIsDetailsModalOpen(false);
+         setSelectedProduct(null);
+         setStockLots([]);
+       }}
+       product={selectedProduct}
+       stockLots={stockLots}
+       isLoading={isLoadingLots}
      />
    </div>
  );

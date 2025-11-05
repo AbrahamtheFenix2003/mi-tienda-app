@@ -91,3 +91,22 @@ export const restoreSupplier = async (id: number): Promise<Supplier> => {
   });
   return supplier;
 };
+
+/**
+ * Obtiene todas las compras asociadas a un proveedor específico.
+ * @param supplierId El ID del proveedor.
+ */
+export const getSupplierPurchases = async (supplierId: number) => {
+  return prisma.purchase.findMany({
+    where: { supplierId },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+      supplier: true,
+    },
+    orderBy: { purchaseDate: 'desc' },
+  });
+};

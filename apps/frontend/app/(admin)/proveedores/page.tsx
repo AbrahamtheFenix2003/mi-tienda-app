@@ -4,12 +4,13 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier } from '@/services/supplierService';
+import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, getSupplierPurchases } from '@/services/supplierService';
 import { SupplierTable } from '@/components/admin/SupplierTable';
 import { AddSupplierModal } from '@/components/admin/AddSupplierModal';
 import { EditSupplierModal } from '@/components/admin/EditSupplierModal';
 import { DeleteSupplierModal } from '@/components/admin/DeleteSupplierModal';
-import { Supplier, SupplierFormData } from '@mi-tienda/types';
+import { SupplierDetailsModal } from '@/components/admin/SupplierDetailsModal';
+import { Supplier, SupplierFormData, Purchase } from '@mi-tienda/types';
 import { Loader2, AlertTriangle, Building2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -24,7 +25,10 @@ export default function ProveedoresPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [supplierPurchases, setSupplierPurchases] = useState<Purchase[]>([]);
+  const [isLoadingPurchases, setIsLoadingPurchases] = useState(false);
 
   // Query para obtener todos los proveedores
   const { 
@@ -83,6 +87,22 @@ export default function ProveedoresPage() {
     },
   });
 
+  // Handler para ver detalles del proveedor
+  const handleViewDetails = async (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setIsDetailsModalOpen(true);
+    setIsLoadingPurchases(true);
+    try {
+      const purchases = await getSupplierPurchases(supplier.id);
+      setSupplierPurchases(purchases);
+    } catch (error) {
+      console.error('Error fetching supplier purchases:', error);
+      setSupplierPurchases([]);
+    } finally {
+      setIsLoadingPurchases(false);
+    }
+  };
+
   const renderContent = () => {
     if (isLoadingSuppliers) {
       return (
@@ -125,6 +145,7 @@ export default function ProveedoresPage() {
           <div className="p-6">
             <SupplierTable
               suppliers={suppliers}
+              onView={handleViewDetails}
               onEdit={(s: Supplier) => { setSelectedSupplier(s); setIsEditModalOpen(true); }}
               onDelete={(s: Supplier) => { setSelectedSupplier(s); setIsDeleteModalOpen(true); }}
             />
@@ -226,6 +247,20 @@ export default function ProveedoresPage() {
           onConfirm={handleConfirmDelete}
           supplierName={selectedSupplier.name}
           isLoading={deleteMutation.isPending}
+        />
+      )}
+
+      {isDetailsModalOpen && selectedSupplier && (
+        <SupplierDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedSupplier(null);
+            setSupplierPurchases([]);
+          }}
+          supplier={selectedSupplier}
+          purchases={supplierPurchases}
+          isLoading={isLoadingPurchases}
         />
       )}
     </div>

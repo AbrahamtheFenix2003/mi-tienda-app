@@ -133,6 +133,27 @@ export const inventoryService = {
       throw new Error(`Error al obtener movimientos de stock: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   },
+
+  /**
+   * Obtiene los lotes de stock de un producto específico.
+   */
+  async getProductStockLots(productId: number) {
+    try {
+      const lots = await prisma.stockLot.findMany({
+        where: {
+          productId,
+        },
+        include: stockLotInclude,
+        orderBy: {
+          entryDate: 'desc',
+        },
+      });
+
+      return lots.map(mapStockLotFromPrisma);
+    } catch (error) {
+      throw new Error(`Error al obtener lotes del producto: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  },
 };
 
 export default inventoryService;

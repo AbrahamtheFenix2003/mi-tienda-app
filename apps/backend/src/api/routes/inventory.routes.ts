@@ -30,4 +30,16 @@ router.get(
   inventoryController.handleGetStockMovements
 );
 
+/**
+ * @route GET /api/v1/inventory/products/:productId/lots
+ * @desc Obtiene los lotes de stock de un producto específico
+ * @access SUPER_ADMIN, SUPER_VENDEDOR
+ */
+router.get(
+  '/products/:productId/lots',
+  authenticateToken,
+  authorizeRole(['SUPER_ADMIN', 'SUPER_VENDEDOR']),
+  inventoryController.handleGetProductStockLots
+);
+
 export default router;

@@ -3,7 +3,7 @@
 'use client';
 
 import { Product } from '@mi-tienda/types';
-import { Edit, Trash2, Package } from 'lucide-react';
+import { Edit, Trash2, Package, Eye } from 'lucide-react';
 import Image from 'next/image';
 import { getAbsoluteImageUrl, isLocalUrl } from '@/lib/imageUtils';
 
@@ -11,13 +11,14 @@ interface ProductTableProps {
   products: Product[];
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
+  onView?: (product: Product) => void;
 }
 
 /**
  * Componente de UI "tonto" (dumb component).
  * Muestra una lista de productos en una tabla.
  */
-export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) => {
+export const ProductTable = ({ products, onEdit, onDelete, onView }: ProductTableProps) => {
   
   const formatPrice = (price: string) => {
     const numPrice = parseFloat(price);
@@ -122,6 +123,15 @@ export const ProductTable = ({ products, onEdit, onDelete }: ProductTableProps) 
                   
                   {/* Acciones */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                    {onView && (
+                      <button
+                        onClick={() => onView(product)}
+                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+                        title="Ver Detalles"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
                       onClick={() => onEdit(product)}
                       className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full transition-colors"

@@ -1,7 +1,7 @@
 // services/productService.ts
 
 import api from './api';
-import { Product, ProductFormData } from '@mi-tienda/types';
+import { Product, ProductFormData, StockLot } from '@mi-tienda/types';
 
 /**
  * Obtiene todos los productos desde la API.
@@ -187,6 +187,21 @@ export const deleteProductImageByIndex = async (productId: number, index: number
     return response.data;
   } catch (error) {
     console.error(`Error deleting image ${index} for product ${productId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene los lotes de inventario de un producto.
+ * @param productId - El ID del producto.
+ * @returns Array de lotes del producto.
+ */
+export const getProductStockLots = async (productId: number): Promise<StockLot[]> => {
+  try {
+    const response = await api.get<StockLot[]>(`/inventory/products/${productId}/lots`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching stock lots for product ${productId}:`, error);
     throw error;
   }
 };
