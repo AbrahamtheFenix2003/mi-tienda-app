@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Product } from '@mi-tienda/types';
 import { Search, X, Package } from 'lucide-react';
 import Image from 'next/image';
@@ -15,8 +15,31 @@ interface SearchBarProps {
 export default function SearchBar({ products, onProductSelect, onSearchChange }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const trimmedQuery = query.trim();
+  const hasSearch = trimmedQuery.length > 0;
+
+  const filteredProducts = useMemo(() => {
+    if (!hasSearch) {
+      return [];
+    }
+
+    const searchTerm = trimmedQuery.toLowerCase();
+
+    return products
+      .filter((product) => {
+        if (!product.isActive) return false;
+
+        const matchesName = product.name.toLowerCase().includes(searchTerm);
+        const matchesCode = product.code.toLowerCase().includes(searchTerm);
+        const matchesCategory = product.category?.name.toLowerCase().includes(searchTerm);
+        const matchesTags = product.tags?.some(tag => tag.toLowerCase().includes(searchTerm));
+        const matchesDescription = product.description?.toLowerCase().includes(searchTerm);
+
+        return matchesName || matchesCode || matchesCategory || matchesTags || matchesDescription;
+      })
+      .slice(0, 8);
+  }, [hasSearch, trimmedQuery, products]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -30,39 +53,22 @@ export default function SearchBar({ products, onProductSelect, onSearchChange }:
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter products based on search query
-  useEffect(() => {
-    if (query.trim().length === 0) {
-      setFilteredProducts([]);
+  const handleInputChange = (value: string) => {
+    setQuery(value);
+    const nextTrimmed = value.trim();
+
+    if (nextTrimmed.length === 0) {
       setIsOpen(false);
       onSearchChange('');
       return;
     }
 
-    const searchTerm = query.toLowerCase().trim();
-
-    const filtered = products
-      .filter((product) => {
-        if (!product.isActive) return false;
-
-        const matchesName = product.name.toLowerCase().includes(searchTerm);
-        const matchesCode = product.code.toLowerCase().includes(searchTerm);
-        const matchesCategory = product.category?.name.toLowerCase().includes(searchTerm);
-        const matchesTags = product.tags?.some(tag => tag.toLowerCase().includes(searchTerm));
-        const matchesDescription = product.description?.toLowerCase().includes(searchTerm);
-
-        return matchesName || matchesCode || matchesCategory || matchesTags || matchesDescription;
-      })
-      .slice(0, 8); // Limit to 8 results
-
-    setFilteredProducts(filtered);
-    setIsOpen(filtered.length > 0);
-    onSearchChange(query);
-  }, [query, products, onSearchChange]);
+    setIsOpen(true);
+    onSearchChange(value);
+  };
 
   const handleClear = () => {
     setQuery('');
-    setFilteredProducts([]);
     setIsOpen(false);
     onSearchChange('');
   };
@@ -83,7 +89,12 @@ export default function SearchBar({ products, onProductSelect, onSearchChange }:
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onFocus={() => {
+            if (hasSearch) {
+              setIsOpen(true);
+            }
+          }}
           placeholder="Buscar productos por nombre, código, categoría..."
           className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all"
         />
@@ -118,7 +129,7 @@ export default function SearchBar({ products, onProductSelect, onSearchChange }:
                   className="w-full p-3 flex items-center gap-3 hover:bg-rose-50 transition-colors text-left"
                 >
                   {/* Product Image */}
-                  <div className="relative w-16 h-16 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                  <div className="relative w-16 h-16 shrink-0 bg-gray-100 rounded overflow-hidden">
                     {imageUrl && isLocalUrl(imageUrl) ? (
                       <Image
                         src={imageUrl}
@@ -128,6 +139,7 @@ export default function SearchBar({ products, onProductSelect, onSearchChange }:
                         className="object-cover"
                       />
                     ) : imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={imageUrl}
                         alt={product.name}
@@ -164,7 +176,7 @@ export default function SearchBar({ products, onProductSelect, onSearchChange }:
       )}
 
       {/* No Results */}
-      {isOpen && query.trim().length > 0 && filteredProducts.length === 0 && (
+      {isOpen && hasSearch && filteredProducts.length === 0 && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-8 text-center">
           <Search className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-600 font-medium">No se encontraron productos</p>

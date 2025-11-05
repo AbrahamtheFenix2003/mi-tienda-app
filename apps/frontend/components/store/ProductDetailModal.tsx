@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Product } from '@mi-tienda/types';
 import { Modal } from '@/components/ui/Modal';
-import { Package, Tag, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Tag, ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import { getAbsoluteImageUrl, isLocalUrl } from '@/lib/imageUtils';
+import { useCart } from '@/hooks/useCart';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -15,6 +16,16 @@ interface ProductDetailModalProps {
 
 export default function ProductDetailModal({ product, isOpen, onClose }: ProductDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const { addItem, getItemQuantity } = useCart();
+
+  const productId = product?.id ?? null;
+  const stockValue = product?.stock ?? 0;
+  const hasStock = stockValue > 0;
+  const existingQuantity = productId ? getItemQuantity(productId) : 0;
+  const remainingStock = Math.max(stockValue - existingQuantity, 0);
+  const canAddToCart = Boolean(product) && hasStock && remainingStock > 0;
+  const displayQuantity = canAddToCart ? Math.min(Math.max(quantity, 1), remainingStock) : 0;
 
   if (!product) return null;
 
@@ -28,7 +39,6 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     .filter((url): url is string => !!url)
     .map(url => getAbsoluteImageUrl(url));
 
-  const hasStock = product.stock > 0;
   const hasDiscount = product.originalPrice && parseFloat(product.originalPrice) > parseFloat(product.price);
 
   const nextImage = () => {
@@ -41,7 +51,29 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
 
   const handleClose = () => {
     setCurrentImageIndex(0);
+    setQuantity(1);
     onClose();
+  };
+
+  const handleDecrease = () => {
+    if (!canAddToCart) return;
+    setQuantity((prev) => {
+      const current = Math.min(Math.max(prev, 1), remainingStock);
+      return Math.max(current - 1, 1);
+    });
+  };
+
+  const handleIncrease = () => {
+    if (!canAddToCart) return;
+    setQuantity((prev) => {
+      const current = Math.min(Math.max(prev, 1), remainingStock);
+      return Math.min(current + 1, remainingStock);
+    });
+  };
+
+  const handleAddToCart = () => {
+    if (!product || !canAddToCart || displayQuantity <= 0) return;
+    addItem(product, displayQuantity);
   };
 
   return (
@@ -53,7 +85,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
           <div className="space-y-4">
             {/* Main Image */}
             <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              {images.length > 0 ? (
+              {images.length > 0 && images[currentImageIndex] ? (
                 isLocalUrl(images[currentImageIndex]) ? (
                   <Image
                     src={images[currentImageIndex]}
@@ -63,6 +95,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                     className="object-cover"
                   />
                 ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={images[currentImageIndex]}
                     alt={product.name}
@@ -114,7 +147,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {isLocalUrl(image) ? (
+                    {image && isLocalUrl(image) ? (
                       <Image
                         src={image}
                         alt={`${product.name} - ${index + 1}`}
@@ -122,12 +155,17 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                         sizes="100px"
                         className="object-cover"
                       />
-                    ) : (
+                    ) : image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={image}
                         alt={`${product.name} - ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
+                    ) : (
+                      <div className="flex items-center justify-center h-full bg-gray-100">
+                        <Package className="h-4 w-4 text-gray-300" />
+                      </div>
                     )}
                   </button>
                 ))}
@@ -222,6 +260,64 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                 </p>
               </div>
             )}
+
+            {/* Add to Cart Section */}
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-rose-500" />
+                <h3 className="font-semibold text-gray-900">Añadir a la cesta</h3>
+              </div>
+
+              {canAddToCart ? (
+                <div className="mt-3 space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Puedes añadir hasta {remainingStock} unidades
+                    {existingQuantity > 0 && ` (ya tienes ${existingQuantity} en tu cesta)`}.
+                  </p>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="inline-flex items-center rounded-full border border-gray-300 bg-white">
+                      <button
+                        type="button"
+                        onClick={handleDecrease}
+                        disabled={displayQuantity <= 1}
+                        className="flex h-10 w-10 items-center justify-center text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 disabled:cursor-not-allowed disabled:text-gray-300"
+                        aria-label="Disminuir cantidad"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="min-w-10 text-center text-base font-semibold text-gray-900">
+                        {displayQuantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleIncrease}
+                        disabled={displayQuantity >= remainingStock}
+                        className="flex h-10 w-10 items-center justify-center text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 disabled:cursor-not-allowed disabled:text-gray-300"
+                        aria-label="Incrementar cantidad"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-full bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      <span>Agregar a la cesta</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm font-medium text-red-600">
+                  {!hasStock
+                    ? 'Por el momento no contamos con stock'
+                    : 'Ya agregaste todas las unidades disponibles para este producto.'}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

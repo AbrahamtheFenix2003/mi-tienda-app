@@ -72,7 +72,21 @@ export const handleCreateProduct = async (req: Request, res: Response) => {
   } catch (error: any) {
     // Manejar error de slug duplicado
     if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
-      return res.status(409).json({ message: 'El "slug" (URL) ya existe' });
+      return res.status(409).json({
+        message: 'El "slug" (URL) ya existe',
+        fieldErrors: {
+          slug: 'Este slug ya está en uso. Por favor, elige uno diferente.'
+        }
+      });
+    }
+    // Manejar error de nombre duplicado
+    if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
+      return res.status(409).json({
+        message: 'El nombre del producto ya existe',
+        fieldErrors: {
+          name: 'Este producto ya existe. Por favor, elige un nombre diferente.'
+        }
+      });
     }
     res.status(500).json({ message: 'Error al crear el producto', error });
   }
@@ -106,7 +120,21 @@ export const handleUpdateProduct = async (req: Request, res: Response) => {
     res.status(200).json(updatedProduct);
   } catch (error: any) {
     if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
-      return res.status(409).json({ message: 'El "slug" (URL) ya existe' });
+      return res.status(409).json({
+        message: 'El "slug" (URL) ya existe',
+        fieldErrors: {
+          slug: 'Este slug ya está en uso. Por favor, elige uno diferente.'
+        }
+      });
+    }
+    // Manejar error de nombre duplicado
+    if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
+      return res.status(409).json({
+        message: 'El nombre del producto ya existe',
+        fieldErrors: {
+          name: 'Este producto ya existe. Por favor, elige un nombre diferente.'
+        }
+      });
     }
     res.status(500).json({ message: 'Error al actualizar el producto', error });
   }

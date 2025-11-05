@@ -24,6 +24,7 @@ export default function ProductosPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
   // Queries
   const { data: products, isLoading: isLoadingProducts, error: errorProducts } = useQuery({
@@ -80,9 +81,15 @@ export default function ProductosPage() {
       alert(`Producto "${updatedProduct.name}" actualizado.`);
     },
     onError: (error: unknown) => {
-      const e = error as { message?: string };
+      const e = error as any;
       console.error('Error al actualizar:', e);
-      alert(e.message ?? 'Error al actualizar producto');
+
+      // Si hay errores por campo, mostrarlos en el formulario del modal
+      if (e.fieldErrors && Object.keys(e.fieldErrors).length > 0) {
+        setEditErrors(e.fieldErrors);
+      } else {
+        alert(e.message ?? 'Error al actualizar producto');
+      }
     },
   });
 
@@ -182,13 +189,19 @@ export default function ProductosPage() {
      {/* Modales */}
      <EditProductModal
        isOpen={isEditModalOpen}
-       onClose={() => { setIsEditModalOpen(false); setSelectedProduct(null); }}
+       onClose={() => {
+         setIsEditModalOpen(false);
+         setSelectedProduct(null);
+         setEditErrors({});
+       }}
        productToEdit={selectedProduct}
        onFormSubmit={handleUpdateSubmit}
        isLoading={updateMutation.isPending}
        categories={categories || []}
        onImageChange={handleImageChange}
        onImageDelete={handleImageDelete}
+       serverErrors={editErrors}
+       allProducts={products || []}
      />
 
      <DeleteProductModal

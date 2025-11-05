@@ -14,38 +14,54 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string | undefined;
 }
 
-const FormInput: React.FC<InputProps> = ({ label, id, error, className = '', ...props }) => (
-  <div>
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700">
-      {label}
-    </label>
-    <input
-      id={id}
-      {...props}
-      className={`mt-1 sm:text-sm ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''} ${className}`}
-    />
-    {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-  </div>
-);
+const FormInput: React.FC<InputProps> = ({ label, id, error, className = '', ...props }) => {
+  const hasError = !!error;
+
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      <input
+        id={id}
+        {...props}
+        className={`mt-1 sm:text-sm block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 transition-colors ${
+          hasError
+            ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200'
+            : 'border-gray-300 focus:border-rose-500 focus:ring-rose-500'
+        } ${className}`}
+      />
+      {error && <p className="mt-1 text-xs text-red-600 font-medium">{error}</p>}
+    </div>
+  );
+};
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
   error?: string | undefined;
 }
 
-const FormTextarea: React.FC<TextareaProps> = ({ label, id, error, className = '', ...props }) => (
-  <div>
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700">
-      {label}
-    </label>
-    <textarea
-      id={id}
-      {...props}
-      className={`mt-1 sm:text-sm ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''} ${className}`}
-    />
-    {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-  </div>
-);
+const FormTextarea: React.FC<TextareaProps> = ({ label, id, error, className = '', ...props }) => {
+  const hasError = !!error;
+
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      <textarea
+        id={id}
+        {...props}
+        className={`mt-1 sm:text-sm block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 transition-colors ${
+          hasError
+            ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200'
+            : 'border-gray-300 focus:border-rose-500 focus:ring-rose-500'
+        } ${className}`}
+      />
+      {error && <p className="mt-1 text-xs text-red-600 font-medium">{error}</p>}
+    </div>
+  );
+};
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
@@ -53,21 +69,29 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   children: React.ReactNode;
 }
 
-const FormSelect: React.FC<SelectProps> = ({ label, id, error, children, className = '', ...props }) => (
-  <div>
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700">
-      {label}
-    </label>
-    <select
-      id={id}
-      {...props}
-      className={`mt-1 sm:text-sm ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''} ${className}`}
-    >
-      {children}
-    </select>
-    {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-  </div>
-);
+const FormSelect: React.FC<SelectProps> = ({ label, id, error, children, className = '', ...props }) => {
+  const hasError = !!error;
+
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      <select
+        id={id}
+        {...props}
+        className={`mt-1 sm:text-sm block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 transition-colors ${
+          hasError
+            ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-200'
+            : 'border-gray-300 focus:border-rose-500 focus:ring-rose-500'
+        } ${className}`}
+      >
+        {children}
+      </select>
+      {error && <p className="mt-1 text-xs text-red-600 font-medium">{error}</p>}
+    </div>
+  );
+};
 
 // --- Componente Principal del Formulario ---
 

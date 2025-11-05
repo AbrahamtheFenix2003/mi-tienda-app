@@ -6,34 +6,34 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed de la base de datos...');
 
-  // Verificar si ya existe un usuario administrador
-  const existingAdmin = await prisma.user.findFirst({
-    where: { role: 'SUPER_ADMIN' },
-  });
+  // --- Función Helper para crear usuarios ---
+  const createUser = async (email, password, name, role) => {
+    const existingUser = await prisma.user.findFirst({
+      where: { email },
+    });
 
-  if (existingAdmin) {
-    console.log('✅ Ya existe un usuario SUPER_ADMIN. Seed completado.');
-    return;
-  }
+    if (existingUser) {
+      console.log(`✅ El usuario ${email} (${role}) ya existe. Saltando creación.`);
+      return;
+    }
 
-  // Crear usuario administrador por defecto
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({
+      data: { email, password: hashedPassword, name, role },
+    });
 
-  const admin = await prisma.user.create({
-    data: {
-      email: 'admin@mitienda.com',
-      password: hashedPassword,
-      name: 'Administrador',
-      role: 'SUPER_ADMIN',
-    },
-  });
+    console.log(`✅ Usuario ${role} creado:`);
+    console.log(`   Email: ${email}`);
+    console.log(`   Password: ${password}`);
+    console.log('');
+  };
 
-  console.log('✅ Usuario administrador creado:');
-  console.log('   Email: admin@mitienda.com');
-  console.log('   Password: admin123');
-  console.log('   Role: SUPER_ADMIN');
-  console.log('');
-  console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer login!');
+  // --- Crear usuarios para cada rol ---
+  await createUser('admin@mitienda.com', 'admin123', 'Administrador', 'SUPER_ADMIN');
+  await createUser('super.vendedor@mitienda.com', 'vendedor123', 'Super Vendedor', 'SUPER_VENDEDOR');
+  await createUser('vendedor@mitienda.com', 'vendedor123', 'Vendedor', 'VENDEDOR');
+
+  console.log('⚠️  IMPORTANTE: Cambia las contraseñas después del primer login!');
 }
 
 main()

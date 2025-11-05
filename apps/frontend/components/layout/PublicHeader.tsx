@@ -5,14 +5,16 @@ import { Product } from '@mi-tienda/types';
 import { User, Home } from 'lucide-react';
 import Link from 'next/link';
 import SearchBar from '@/components/store/SearchBar';
+import CartButton from '@/components/store/CartButton';
 
 interface PublicHeaderProps {
   products: Product[];
   onProductSelect: (product: Product) => void;
   onSearchChange: (query: string) => void;
+  onCartClick: () => void;
 }
 
-export default function PublicHeader({ products, onProductSelect, onSearchChange }: PublicHeaderProps) {
+export default function PublicHeader({ products, onProductSelect, onSearchChange, onCartClick }: PublicHeaderProps) {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
   <div className="max-w-7xl mr-auto px-4 sm:px-6 lg:pl-4 lg:pr-8">
@@ -27,24 +29,36 @@ export default function PublicHeader({ products, onProductSelect, onSearchChange
               <p className="text-xs text-gray-500">Tu tienda de confianza</p>
             </div>
           </Link>
+          <div className="flex items-center gap-4">
+            {/* Navigation Links */}
+            <nav className="hidden md:flex items-center gap-6">
+              <Link
+                href="/"
+                className="flex items-center gap-2 text-gray-700 hover:text-rose-600 transition-colors font-medium"
+              >
+                <Home className="h-4 w-4" />
+                Inicio
+              </Link>
+              <Link
+                href="/login"
+                className="flex items-center gap-2 text-gray-700 hover:text-rose-600 transition-colors font-medium"
+              >
+                <User className="h-4 w-4" />
+                Iniciar Sesión
+              </Link>
+            </nav>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-gray-700 hover:text-rose-600 transition-colors font-medium"
-            >
-              <Home className="h-4 w-4" />
-              Inicio
-            </Link>
-            <Link
-              href="/login"
-              className="flex items-center gap-2 text-gray-700 hover:text-rose-600 transition-colors font-medium"
-            >
-              <User className="h-4 w-4" />
-              Iniciar Sesión
-            </Link>
-          </nav>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/login"
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-rose-600 transition-colors md:hidden"
+              >
+                <User className="h-4 w-4" />
+                Iniciar Sesión
+              </Link>
+              <CartButton onClick={onCartClick} />
+            </div>
+          </div>
         </div>
 
         {/* Search Bar */}

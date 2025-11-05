@@ -28,9 +28,18 @@ export const createProduct = async (data: ProductFormData): Promise<Product> => 
     // El token se adjunta automáticamente gracias a 'setAuthToken' en useAuth.tsx
     const response = await api.post<Product>('/products', data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating product:', error);
-    throw error;
+
+    // Extraer información del error para mostrarlo al usuario
+    const errorData = error.response?.data || {};
+    const fieldErrors = errorData.fieldErrors || {};
+
+    // Crear un error personalizado que incluya los errores por campo
+    const customError = new Error(errorData.message || 'Error al crear el producto');
+    (customError as any).fieldErrors = fieldErrors;
+
+    throw customError;
   }
 };
 
@@ -45,9 +54,18 @@ export const updateProduct = async (id: number, data: Partial<ProductFormData>):
     // El token se adjunta automáticamente
     const response = await api.put<Product>(`/products/${id}`, data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error updating product ${id}:`, error);
-    throw error;
+
+    // Extraer información del error para mostrarlo al usuario
+    const errorData = error.response?.data || {};
+    const fieldErrors = errorData.fieldErrors || {};
+
+    // Crear un error personalizado que incluya los errores por campo
+    const customError = new Error(errorData.message || 'Error al actualizar el producto');
+    (customError as any).fieldErrors = fieldErrors;
+
+    throw customError;
   }
 };
 

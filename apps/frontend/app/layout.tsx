@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import QueryProvider from "@/components/QueryProvider";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CartProvider } from "@/contexts/CartContext";
 
 // Definición de metadatos (tipado estricto)
 export const metadata: Metadata = {
@@ -21,9 +22,11 @@ export default function RootLayout({
       <body className="min-h-screen antialiased">
         {/* 2. Envuelve toda la aplicación con el proveedor */}
         <AuthProvider>
-          <QueryProvider>
-            {children}
-          </QueryProvider>
+          <CartProvider>
+            <QueryProvider>
+              {children}
+            </QueryProvider>
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

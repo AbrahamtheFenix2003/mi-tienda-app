@@ -1,9 +1,11 @@
 'use client';
 
+import type { MouseEvent } from 'react';
 import { Product } from '@mi-tienda/types';
-import { Package, Tag } from 'lucide-react';
+import { Package, ShoppingCart, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { getAbsoluteImageUrl, isLocalUrl } from '@/lib/imageUtils';
+import { useCart } from '@/hooks/useCart';
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +16,16 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const imageUrl = product.imageUrl ? getAbsoluteImageUrl(product.imageUrl) : null;
   const hasStock = product.stock > 0;
   const hasDiscount = product.originalPrice && parseFloat(product.originalPrice) > parseFloat(product.price);
+  const { addItem, getItemQuantity } = useCart();
+  const existingQuantity = getItemQuantity(product.id);
+  const remainingStock = Math.max(product.stock - existingQuantity, 0);
+  const canAddToCart = hasStock && remainingStock > 0;
+
+  const handleAddToCart = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!canAddToCart) return;
+    addItem(product, 1);
+  };
 
   return (
     <div
@@ -31,6 +43,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
             className="object-cover group-hover:scale-105 transition-transform duration-200"
           />
         ) : imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
             alt={product.name}
@@ -77,7 +90,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         )}
 
         {/* Product Name */}
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-rose-600 transition-colors">
+    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-10 group-hover:text-rose-600 transition-colors">
           {product.name}
         </h3>
 
@@ -94,11 +107,31 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         </div>
 
         {/* Stock Info */}
-        {hasStock && (
-          <p className="text-xs text-green-600 mt-1">
-            {product.stock} disponibles
-          </p>
+        {hasStock ? (
+          <div className="mt-1 space-y-1 text-xs">
+            <p className="text-green-600">{product.stock} disponibles</p>
+            {existingQuantity > 0 && (
+              <p className="text-gray-500">
+                En tu cesta: {existingQuantity}
+                {remainingStock <= 0 && ' (límite alcanzado)'}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="mt-1 text-xs font-medium text-red-600">Sin stock</p>
         )}
+
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={!canAddToCart}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-rose-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            <span>{canAddToCart ? 'Añadir a la cesta' : 'Sin disponibilidad'}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

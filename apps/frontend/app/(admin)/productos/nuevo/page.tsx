@@ -6,13 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { productSchema, ProductFormData, Product } from '@mi-tienda/types';
-import { createProduct, uploadProductImageByIndex } from '@/services/productService';
+import { productSchema, ProductFormData, Product, createProductSchemaWithUniqueValidation } from '@mi-tienda/types';
+import { createProduct, uploadProductImageByIndex, fetchProducts } from '@/services/productService';
 import { fetchCategories } from '@/services/categoryService';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { Loader2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useInvalidateQueries, QUERY_KEYS } from '@/utils/queryInvalidation';
+import { isProductNameUnique, isProductSlugUnique } from '@/lib/productValidators';
 
 export default function NuevoProductoPage() {
   const router = useRouter();
@@ -30,9 +31,21 @@ export default function NuevoProductoPage() {
     error: errorCategories,
   } = useQuery({ queryKey: QUERY_KEYS.CATEGORIES, queryFn: fetchCategories });
 
+  // --- Query para productos (para validar unicidad) ---
+  const {
+    data: allProducts,
+    isLoading: isLoadingProducts,
+  } = useQuery({ queryKey: QUERY_KEYS.PRODUCTS, queryFn: fetchProducts });
+
+  // --- Crear schema con validación personalizada ---
+  const validationSchema = createProductSchemaWithUniqueValidation({
+    isNameUnique: (name) => isProductNameUnique(name, allProducts),
+    isSlugUnique: (slug) => isProductSlugUnique(slug, allProducts),
+  });
+
   // --- Formulario ---
   const form = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
+    resolver: zodResolver(validationSchema) as Resolver<ProductFormData>,
     defaultValues: {
       name: '',
       slug: '',
@@ -90,9 +103,20 @@ export default function NuevoProductoPage() {
       router.push('/productos');
     },
     onError: (error: unknown) => {
-      const e = error as Error;
+      const e = error as any;
       console.error('Error al crear producto (datos):', e);
-      alert(e.message ?? 'No se pudo crear el producto');
+
+      // Si hay errores por campo, usarlos para actualizar el formulario
+      if (e.fieldErrors && Object.keys(e.fieldErrors).length > 0) {
+        Object.entries(e.fieldErrors).forEach(([field, message]) => {
+          form.setError(field as any, {
+            type: 'server',
+            message: message as string,
+          });
+        });
+      } else {
+        alert(e.message ?? 'No se pudo crear el producto');
+      }
     },
   });
 
@@ -113,11 +137,11 @@ export default function NuevoProductoPage() {
 
   const isSubmitting = createProductMutation.status === 'pending' || uploadImageMutation.status === 'pending';
 
-  if (isLoadingCategories) {
+  if (isLoadingCategories || isLoadingProducts) {
     return (
       <div className="flex justify-center items-center py-20">
         <Loader2 className="h-10 w-10 mr-3 animate-spin text-gray-500" />
-        <span className="text-lg text-gray-500">Cargando categorías...</span>
+        <span className="text-lg text-gray-500">Cargando datos...</span>
       </div>
     );
   }

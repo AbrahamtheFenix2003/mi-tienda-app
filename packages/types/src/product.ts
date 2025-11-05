@@ -87,3 +87,38 @@ export const productSchema = z.object({
 });
 
 export type ProductFormData = z.infer<typeof productSchema>;
+
+/**
+ * Schema extendido que permite validación personalizada de unicidad
+ * Se usa en el frontend para validar nombres y slugs únicos
+ */
+export const createProductSchemaWithUniqueValidation = (options: {
+  isNameUnique?: (name: string) => boolean;
+  isSlugUnique?: (slug: string) => boolean;
+}) => {
+  return productSchema
+    .refine(
+      (data) => {
+        if (options.isNameUnique) {
+          return options.isNameUnique(data.name);
+        }
+        return true;
+      },
+      {
+        message: "Este nombre ya está en uso. Por favor, elige uno diferente.",
+        path: ["name"],
+      }
+    )
+    .refine(
+      (data) => {
+        if (options.isSlugUnique) {
+          return options.isSlugUnique(data.slug);
+        }
+        return true;
+      },
+      {
+        message: "Este slug ya está en uso. Por favor, elige uno diferente.",
+        path: ["slug"],
+      }
+    );
+};

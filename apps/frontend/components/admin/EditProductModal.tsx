@@ -5,10 +5,11 @@
 import { useEffect, useMemo } from 'react';
 import { useForm, type Resolver, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { productSchema, ProductFormData, Product, Category } from '@mi-tienda/types';
+import { productSchema, ProductFormData, Product, Category, createProductSchemaWithUniqueValidation } from '@mi-tienda/types';
 import { Modal } from '@/components/ui/Modal';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { getAbsoluteImageUrl } from '@/lib/imageUtils';
+import { isProductNameUnique, isProductSlugUnique } from '@/lib/productValidators';
 
 interface EditProductModalProps {
   isOpen: boolean;
@@ -20,6 +21,10 @@ interface EditProductModalProps {
   // Prop para propagar el cambio de una imagen individual con su índice
   onImageChange?: (file: File, index: number) => void;
   onImageDelete?: (index: number) => void;
+  // Errores del servidor por campo
+  serverErrors?: Record<string, string>;
+  // Lista de productos para validar unicidad
+  allProducts?: Product[];
 }
 
 export const EditProductModal = ({
@@ -31,9 +36,19 @@ export const EditProductModal = ({
   categories,
   onImageChange,
   onImageDelete,
+  serverErrors = {},
+  allProducts = [],
 }: EditProductModalProps) => {
+  // Crear schema con validación personalizada, excluyendo el producto actual
+  const validationSchema = useMemo(() => {
+    return createProductSchemaWithUniqueValidation({
+      isNameUnique: (name) => isProductNameUnique(name, allProducts, productToEdit?.id),
+      isSlugUnique: (slug) => isProductSlugUnique(slug, allProducts, productToEdit?.id),
+    });
+  }, [allProducts, productToEdit?.id]);
+
   const form = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
+    resolver: zodResolver(validationSchema) as Resolver<ProductFormData>,
   });
 
   useEffect(() => {
@@ -60,6 +75,18 @@ export const EditProductModal = ({
       form.reset();
     }
   }, [productToEdit, form]);
+
+  // Actualizar errores del servidor cuando cambian
+  useEffect(() => {
+    if (serverErrors && Object.keys(serverErrors).length > 0) {
+      Object.entries(serverErrors).forEach(([field, message]) => {
+        form.setError(field as any, {
+          type: 'server',
+          message: message,
+        });
+      });
+    }
+  }, [serverErrors, form]);
 
   const handleInternalSubmit = (data: ProductFormData) => {
     // Delegamos el submit al padre. NO cerramos el modal aquí; el padre decidirá si cerrarlo

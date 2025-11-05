@@ -12,12 +12,14 @@ import CategorySidebar from '@/components/store/CategorySidebar';
 import ContactInfo from '@/components/store/ContactInfo';
 import ProductCard from '@/components/store/ProductCard';
 import ProductDetailModal from '@/components/store/ProductDetailModal';
+import CartDrawer from '@/components/store/CartDrawer';
 
 export default function HomePage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
@@ -83,6 +85,7 @@ export default function HomePage() {
         products={products.filter(p => p.isActive)}
         onProductSelect={handleProductSelect}
         onSearchChange={setSearchQuery}
+        onCartClick={() => setIsCartOpen(true)}
       />
 
       {/* Main Content */}
@@ -191,9 +194,16 @@ export default function HomePage() {
 
       {/* Product Detail Modal */}
       <ProductDetailModal
+        key={selectedProduct?.id ?? 'empty'}
         product={selectedProduct}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+      />
+
+      {/* Cart Drawer */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
       />
     </div>
   );
