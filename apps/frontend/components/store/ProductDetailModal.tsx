@@ -193,12 +193,12 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
             <div className="border-t border-b border-gray-200 py-4">
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-bold text-rose-600">
-                  ${parseFloat(product.price).toFixed(2)}
+                  S/. {parseFloat(product.price).toFixed(2)}
                 </span>
                 {hasDiscount && (
                   <>
                     <span className="text-xl text-gray-400 line-through">
-                      ${parseFloat(product.originalPrice!).toFixed(2)}
+                      S/. {parseFloat(product.originalPrice!).toFixed(2)}
                     </span>
                     <span className="bg-green-500 text-white text-sm font-semibold px-2 py-1 rounded">
                       {Math.round((1 - parseFloat(product.price) / parseFloat(product.originalPrice!)) * 100)}% OFF

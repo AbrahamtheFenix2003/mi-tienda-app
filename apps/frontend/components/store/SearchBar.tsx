@@ -161,7 +161,7 @@ export default function SearchBar({ products, onProductSelect, onSearchChange }:
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm font-semibold text-rose-600">
-                        ${parseFloat(product.price).toFixed(2)}
+                        S/. {parseFloat(product.price).toFixed(2)}
                       </span>
                       {!hasStock && (
                         <span className="text-xs text-red-600 font-medium">Sin stock</span>

@@ -97,11 +97,11 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         {/* Price */}
         <div className="flex items-baseline gap-2">
           <span className="text-xl font-bold text-rose-600">
-            ${parseFloat(product.price).toFixed(2)}
+            S/. {parseFloat(product.price).toFixed(2)}
           </span>
           {hasDiscount && (
             <span className="text-sm text-gray-400 line-through">
-              ${parseFloat(product.originalPrice!).toFixed(2)}
+              S/. {parseFloat(product.originalPrice!).toFixed(2)}
             </span>
           )}
         </div>

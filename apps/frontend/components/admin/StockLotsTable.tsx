@@ -10,10 +10,10 @@ interface StockLotsTableProps {
 // Helper para formatear precios
 const formatPrice = (price: string): string => {
   const numericPrice = parseFloat(price);
-  return new Intl.NumberFormat('es-CO', {
+  return new Intl.NumberFormat('es-PE', {
     style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
+    currency: 'PEN',
+    minimumFractionDigits: 2,
   }).format(numericPrice);
 };
 

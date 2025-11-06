@@ -13,10 +13,10 @@ const formatPrice = (price: string | null | undefined): string => {
   const num = parseFloat(price);
   return isNaN(num) 
     ? 'N/A' 
-    : new Intl.NumberFormat('es-CO', {
+    : new Intl.NumberFormat('es-PE', {
         style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
+        currency: 'PEN',
+        minimumFractionDigits: 2,
         maximumFractionDigits: 0,
       }).format(num);
 };
@@ -24,7 +24,7 @@ const formatPrice = (price: string | null | undefined): string => {
 // Helper para formatear fecha y hora
 const formatDateTime = (dateStr: string): string => {
   const date = new Date(dateStr);
-  return `${date.toLocaleDateString('es-CO')} ${date.toLocaleTimeString('es-CO', {
+  return `${date.toLocaleDateString('es-PE')} ${date.toLocaleTimeString('es-PE', {
     hour: '2-digit',
     minute: '2-digit',
   })}`;

@@ -16,10 +16,10 @@ const formatPrice = (price: string | null | undefined): string => {
   const numPrice = parseFloat(price);
   if (isNaN(numPrice)) return 'N/A';
   
-  return new Intl.NumberFormat('es-CO', {
+  return new Intl.NumberFormat('es-PE', {
     style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
+    currency: 'PEN',
+    minimumFractionDigits: 2,
     maximumFractionDigits: 0,
   }).format(numPrice);
 };
