@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 // Obtener configuración dinámica desde variables de entorno
 const getBackendHost = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://braholet-importaciones-core.global-atlas-solutions.com';
   try {
     const url = new URL(apiUrl);
     return {
