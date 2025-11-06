@@ -12,34 +12,34 @@ export const getImageUrl = (imagePath: string | null | undefined): string => {
   if (!imagePath) {
     return '';
   }
-  
+
   // Si la imagen ya tiene una URL completa, úsala
   if (imagePath.startsWith('http')) {
     return imagePath;
   }
-  
+
   // Determinar la URL base según el entorno y contexto
   let baseUrl: string;
-  
+
   if (process.env.NODE_ENV === 'production') {
     // En producción, verificar si estamos en el navegador (cliente) o en el servidor
     if (typeof window !== 'undefined') {
-      // En el navegador (cliente), usar localhost para que el navegador pueda resolver
-      baseUrl = 'http://localhost:8080';
+      // En el navegador (cliente), usar la URL pública del API
+      baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
     } else {
-      // En el servidor, usar backend para comunicación contenedor-a-contenedor
-      baseUrl = 'http://backend:8080';
+      // En el servidor, usar la URL interna del backend (para Docker/K8s)
+      baseUrl = process.env.NEXT_INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
     }
   } else {
-    // En desarrollo, siempre usar localhost
-    baseUrl = 'http://localhost:8080';
+    // En desarrollo, usar la URL pública del API
+    baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
   }
-  
+
   // Si el path ya incluye /uploads/, evitar duplicación
   const cleanImagePath = imagePath.startsWith('/uploads/')
     ? imagePath.replace('/uploads/', '')
     : imagePath;
-  
+
   return `${baseUrl}/uploads/${cleanImagePath}`;
 };
 
@@ -98,11 +98,17 @@ export const getAbsoluteImageUrl = getImageUrl;
  */
 export const isLocalUrl = (url: string): boolean => {
   if (!url) return false;
-  
+
   // Si no empieza con http, es relativa (local)
   if (!url.startsWith('http')) return true;
-  
-  // Si empieza con localhost o la URL base del backend, es local
-  const localHosts = ['localhost:8080', '127.0.0.1:8080', 'backend:8080'];
-  return localHosts.some(host => url.includes(host));
+
+  // Obtener los hosts configurados
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+  const internalApiBaseUrl = process.env.NEXT_INTERNAL_API_BASE_URL || '';
+
+  // Extraer hostnames de las URLs configuradas
+  const configuredHosts = [apiBaseUrl, internalApiBaseUrl].filter(Boolean);
+
+  // Verificar si la URL contiene alguno de los hosts configurados
+  return configuredHosts.some(host => url.includes(host.replace('http://', '').replace('https://', '')));
 };

@@ -2,6 +2,25 @@
 # Docker Compose para Mi Tienda App
 # Monorepo con Frontend (Next.js) + Backend (Express) + PostgreSQL
 # ============================================
+#
+# VARIABLES DE ENTORNO CONFIGURABLES:
+# Para producción, cree un archivo .env en la raíz con estas variables:
+#
+# # Base de datos
+# POSTGRES_USER=tienda_user
+# POSTGRES_PASSWORD=supersecretpassword123
+# POSTGRES_DB=mi_tienda_db
+#
+# # Backend
+# PORT=8080
+# JWT_SECRET=mi-clave-secreta-para-jwt-2025
+# NODE_ENV=production
+# CORS_ORIGINS=https://your-domain.com,https://www.your-domain.com
+#
+# # Frontend
+# NEXT_PUBLIC_API_URL=https://api.your-domain.com/api/v1
+# NEXT_PUBLIC_API_BASE_URL=https://api.your-domain.com
+# NEXT_INTERNAL_API_BASE_URL=http://backend:8080
 
 services:
   # ==========================================
@@ -19,9 +38,9 @@ services:
 
     # Variables de entorno para configurar la base de datos
     environment:
-      POSTGRES_USER: tienda_user # El usuario de la base de datos
-      POSTGRES_PASSWORD: supersecretpassword123 # La contraseña (cámbiala si quieres)
-      POSTGRES_DB: mi_tienda_db # El nombre de la base de datos que se creará
+      POSTGRES_USER: ${POSTGRES_USER:-tienda_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-supersecretpassword123}
+      POSTGRES_DB: ${POSTGRES_DB:-mi_tienda_db}
 
     # Mapeo de puertos: conecta el puerto 5432 de tu máquina al 5432 del contenedor
     # Esto nos permite conectarnos a la base de datos desde localhost:5432
@@ -39,7 +58,7 @@ services:
 
     # Health check para verificar que PostgreSQL está listo
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tienda_user -d mi_tienda_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tienda_user} -d ${POSTGRES_DB:-mi_tienda_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -61,10 +80,11 @@ services:
 
     # Variables de entorno
     environment:
-      DATABASE_URL: "postgresql://tienda_user:supersecretpassword123@postgres:5432/mi_tienda_db?schema=public"
-      PORT: 8080
-      JWT_SECRET: "mi-clave-secreta-para-jwt-2025"
-      NODE_ENV: production
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-tienda_user}:${POSTGRES_PASSWORD:-supersecretpassword123}@postgres:5432/${POSTGRES_DB:-mi_tienda_db}?schema=public"
+      PORT: ${PORT:-8080}
+      JWT_SECRET: ${JWT_SECRET:-mi-clave-secreta-para-jwt-2025}
+      NODE_ENV: ${NODE_ENV:-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
 
     # Mapeo de puertos: conecta el puerto 8080 de tu máquina al 8080 del contenedor
     # Esto nos permite acceder a la API desde localhost:8080
@@ -109,10 +129,13 @@ services:
 
     # Variables de entorno
     environment:
-      NODE_ENV: production
-      # URL del backend (desde el contenedor usa el nombre del servicio)
-      # Para desarrollo local usar: http://localhost:8080/api/v1
-      NEXT_PUBLIC_API_URL: http://backend:8080/api/v1
+      NODE_ENV: ${NODE_ENV:-production}
+      # URL pública del API para el navegador (debe ser la URL FQDN en producción)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api/v1}
+      # URL base para construcción de URLs de imágenes en el navegador
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080}
+      # URL interna del backend para comunicación servidor-a-servidor (dentro de Docker)
+      NEXT_INTERNAL_API_BASE_URL: ${NEXT_INTERNAL_API_BASE_URL:-http://backend:8080}
       NEXT_TELEMETRY_DISABLED: 1
       PORT: 3000
       HOSTNAME: "0.0.0.0"

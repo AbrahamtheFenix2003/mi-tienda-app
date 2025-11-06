@@ -1,5 +1,27 @@
 import type { NextConfig } from "next";
 
+// Obtener configuración dinámica desde variables de entorno
+const getBackendHost = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+  try {
+    const url = new URL(apiUrl);
+    return {
+      protocol: url.protocol.replace(':', '') as 'http' | 'https',
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? '443' : '80'),
+    };
+  } catch {
+    // Fallback si la URL no es válida
+    return {
+      protocol: 'http' as const,
+      hostname: 'localhost',
+      port: '8080',
+    };
+  }
+};
+
+const backendConfig = getBackendHost();
+
 const nextConfig: NextConfig = {
   // Modo standalone optimizado para Docker
   // Genera una build con solo las dependencias necesarias
@@ -17,22 +39,16 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
+        // Configuración dinámica basada en variables de entorno
+        protocol: backendConfig.protocol,
+        hostname: backendConfig.hostname,
+        port: backendConfig.port,
+        pathname: '/uploads/**',
+      },
+      // Mantener localhost para desarrollo local
+      {
         protocol: 'http',
         hostname: 'localhost',
-        port: '8080',
-        pathname: '/uploads/**',
-      },
-      {
-        // Permitir imágenes del backend en producción/Docker
-        protocol: 'http',
-        hostname: 'backend',
-        port: '8080',
-        pathname: '/uploads/**',
-      },
-      {
-        // Permitir IPs de red local para desarrollo Docker
-        protocol: 'http',
-        hostname: '172.26.192.1',
         port: '8080',
         pathname: '/uploads/**',
       },

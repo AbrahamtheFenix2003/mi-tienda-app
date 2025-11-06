@@ -12,8 +12,28 @@ const __dirname = dirname(__filename);
 // Inicializar la aplicación de Express
 const app: Application = express();
 
-// Middlewares base
-app.use(cors()); // Habilita CORS
+// Configuración de CORS dinámica basada en variables de entorno
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : ['http://localhost:3000', 'http://localhost:8080'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (como Postman, aplicaciones móviles, etc.)
+    if (!origin) return callback(null, true);
+
+    // Verificar si el origen está en la lista permitida
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json()); // Parsea JSON en el body
 app.use(express.urlencoded({ extended: true })); // Parsea URL-encoded bodies
 
