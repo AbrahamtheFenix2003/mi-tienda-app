@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { CreateManualMovementInput, CashMovementWithRelations } from '@mi-tienda/types';
+import { CreateManualMovementInput, CashMovementWithRelations, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@mi-tienda/types';
 import { Loader2 } from 'lucide-react';
 
 // --- Componentes de Formulario Reutilizables ---
@@ -64,6 +64,14 @@ export const ManualMovementForm: React.FC<ManualMovementFormProps> = ({
   initialData,
 }) => {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = form;
+  const typeValue = watch('type');
+
+  // Obtener categorías disponibles según el tipo seleccionado
+  const availableCategories = typeValue === 'ENTRADA'
+    ? INCOME_CATEGORIES
+    : typeValue === 'SALIDA'
+    ? EXPENSE_CATEGORIES
+    : [];
 
   // Convertir fecha string a Date para el input date si existe initialData
   React.useEffect(() => {
@@ -73,6 +81,13 @@ export const ManualMovementForm: React.FC<ManualMovementFormProps> = ({
       setValue('date', dateString);
     }
   }, [initialData, setValue]);
+
+  // Resetear categoría cuando cambia el tipo
+  React.useEffect(() => {
+    if (typeValue) {
+      setValue('category', '');
+    }
+  }, [typeValue, setValue]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -117,14 +132,20 @@ export const ManualMovementForm: React.FC<ManualMovementFormProps> = ({
 
           {/* Columna Derecha */}
           <div className="space-y-6">
-            <FormInput
+            <FormSelect
               label="Categoría *"
               id="category"
               {...register('category')}
               error={errors.category?.message as string | undefined}
-              placeholder="Ej: Ventas, Compras, Servicios, etc."
               defaultValue={initialData?.category || ''}
-            />
+            >
+              <option value="">Seleccionar categoría</option>
+              {availableCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </FormSelect>
 
             <FormInput
               label="Fecha *"

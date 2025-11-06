@@ -17,24 +17,44 @@ import {
 } from 'lucide-react';
 import Link from 'next/link'; // Usamos el Link de Next.js
 import { usePathname } from 'next/navigation'; // Hook para saber la ruta activa
+import { useAuth } from '@/hooks/useAuth';
+import { Role } from '@mi-tienda/types';
 
-// 1. Definimos los items de navegación (tu lista)
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/productos', label: 'Productos', icon: Package },
-  { href: '/categorias', label: 'Categorías', icon: FolderOpen },
-  { href: '/proveedores', label: 'Proveedores', icon: Building2 },
-  { href: '/punto-de-ventas', label: 'Punto de ventas', icon: ShoppingCart },
-  { href: '/reportes', label: 'Reportes', icon: AreaChart },
+// 1. Definimos los items de navegación con roles permitidos
+interface NavItem {
+  href: string;
+  label: string;
+  icon: any;
+  requiredRoles?: Role[];
+}
+
+const navItems: NavItem[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }, // Visible para todos
+  { href: '/productos', label: 'Productos', icon: Package, requiredRoles: ['SUPER_ADMIN'] },
+  { href: '/categorias', label: 'Categorías', icon: FolderOpen, requiredRoles: ['SUPER_ADMIN'] },
+  { href: '/proveedores', label: 'Proveedores', icon: Building2, requiredRoles: ['SUPER_ADMIN', 'SUPER_VENDEDOR'] },
+  { href: '/punto-de-ventas', label: 'Punto de ventas', icon: ShoppingCart }, // Visible para todos
+  { href: '/reportes', label: 'Reportes', icon: AreaChart, requiredRoles: ['SUPER_ADMIN', 'SUPER_VENDEDOR'] },
   // { href: '/rentabilidad', label: 'Analisis de rentabilidad', icon: Calculator }, // Oculto temporalmente
-  { href: '/almacen', label: 'Almacen', icon: Warehouse },
-  { href: '/compras', label: 'Compras', icon: Truck },
-  { href: '/caja', label: 'Caja', icon: Wallet },
+  { href: '/almacen', label: 'Almacen', icon: Warehouse, requiredRoles: ['SUPER_ADMIN', 'SUPER_VENDEDOR'] },
+  { href: '/compras', label: 'Compras', icon: Truck, requiredRoles: ['SUPER_ADMIN', 'SUPER_VENDEDOR'] },
+  { href: '/caja', label: 'Caja', icon: Wallet, requiredRoles: ['SUPER_ADMIN', 'SUPER_VENDEDOR'] },
 ];
 
 export const Sidebar = () => {
   // 2. Hook para saber qué ruta está activa
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  // 3. Filtrar items según el rol del usuario
+  const visibleItems = navItems.filter(item => {
+    // Si el item no tiene requiredRoles, es visible para todos
+    if (!item.requiredRoles) return true;
+    // Si el usuario no existe, no mostrar
+    if (!user) return false;
+    // Mostrar si el rol del usuario está en requiredRoles
+    return item.requiredRoles.includes(user.role);
+  });
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gray-900 text-white transition-transform">
@@ -48,19 +68,19 @@ export const Sidebar = () => {
           </span>
         </Link>
 
-        {/* 3. Lista de Navegación (mapeada) */}
+        {/* 4. Lista de Navegación (mapeada con filtrado por rol) */}
         <ul className="space-y-2 font-medium">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             // Comprobamos si la ruta actual es la del item
             const isActive = pathname === item.href;
-            
+
             return (
               <li key={item.label}>
                 <Link
                   href={item.href}
                   className={`
                     group flex items-center rounded-lg p-2
-                    ${isActive 
+                    ${isActive
                       ? 'bg-rose-600 text-white' // Estilo activo
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white' // Estilo normal
                     }
@@ -68,7 +88,7 @@ export const Sidebar = () => {
                 >
                   <item.icon className={`
                     h-5 w-5 transition duration-75
-                    ${isActive 
+                    ${isActive
                       ? 'text-white' // Icono activo
                       : 'text-gray-400 group-hover:text-white' // Icono normal
                     }

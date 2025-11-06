@@ -15,5 +15,6 @@ router.get('/movements', authenticateToken, controller.handleGetCashMovements);
 // Solo usuarios autenticados pueden acceder
 router.post('/manual', authenticateToken, controller.handleCreateManualMovement);
 router.put('/manual/:id', authenticateToken, controller.handleUpdateManualMovement);
+router.delete('/manual/:id', authenticateToken, controller.handleDeleteManualMovement);
 
 export default router;

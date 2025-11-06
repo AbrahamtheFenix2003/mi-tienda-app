@@ -6,12 +6,25 @@ export type CashMovementWithRelations = CashMovement & {
   user: User;
 };
 
+// Categorías dinámicas según el tipo de movimiento
+export const INCOME_CATEGORIES = ['Ingreso de capital'] as const;
+export const EXPENSE_CATEGORIES = [
+  'Pago de sistema',
+  'Pago a personal',
+  'Pago de servicios',
+  'Pago de envío',
+] as const;
+
+export type IncomeCategory = (typeof INCOME_CATEGORIES)[number];
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+export type CashCategory = IncomeCategory | ExpenseCategory;
+
 // Esquema Zod para movimientos manuales de caja
 export const manualMovementSchema = z.object({
   description: z.string().min(3, { message: 'Descripción requerida' }),
   amount: z.number().positive({ message: 'El monto debe ser positivo' }),
   type: z.enum(['ENTRADA', 'SALIDA'], { message: 'Tipo requerido' }),
-  category: z.string().min(3, { message: 'Categoría requerida' }),
+  category: z.string().min(1, { message: 'Categoría requerida' }),
   date: z.string().refine(
     (val) => {
       // Acepta formato YYYY-MM-DD o ISO 8601 completo

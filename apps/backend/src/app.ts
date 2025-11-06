@@ -20,6 +20,8 @@ app.use(express.urlencoded({ extended: true })); // Parsea URL-encoded bodies
 // --- SERVIR ARCHIVOS ESTÁTICOS ---
 // Servir archivos desde la carpeta 'uploads' bajo la ruta '/uploads'
 const uploadsPath = path.resolve(__dirname, '..', 'uploads'); // Va un nivel arriba desde src
+
+// Middleware para servir archivos estáticos
 app.use('/uploads', express.static(uploadsPath));
 // ------------------------------------
 

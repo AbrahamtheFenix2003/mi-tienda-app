@@ -62,17 +62,17 @@ export class CashController {
   handleUpdateManualMovement = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      
+
       // Validar los datos de entrada con el esquema Zod (parcial para actualización)
       const validatedData = manualMovementSchema.partial().parse(req.body);
-      
+
       // Actualizar el movimiento manual a través del servicio
       const updatedMovement = await this.cashService.updateManualMovement(id, validatedData);
-      
+
       res.status(200).json(updatedMovement);
     } catch (error) {
       console.error('Error in handleUpdateManualMovement:', error);
-      
+
       if (error instanceof ZodError) {
         // Error de validación de Zod
         res.status(400).json({
@@ -85,6 +85,32 @@ export class CashController {
       } else {
         // Error interno del servidor
         res.status(500).json({ message: 'Error updating manual movement' });
+      }
+    }
+  };
+
+  handleDeleteManualMovement = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // Eliminar el movimiento manual a través del servicio
+      await this.cashService.deleteManualMovement(id);
+
+      res.status(200).json({ message: 'Movimiento eliminado correctamente' });
+    } catch (error) {
+      console.error('Error in handleDeleteManualMovement:', error);
+
+      if (error instanceof Error) {
+        if (error.message.includes('Movimiento no encontrado')) {
+          res.status(404).json({ message: 'Movimiento no encontrado' });
+        } else if (error.message.includes('Solo se pueden eliminar movimientos manuales')) {
+          res.status(400).json({ message: 'Solo se pueden eliminar movimientos manuales' });
+        } else {
+          res.status(500).json({ message: error.message });
+        }
+      } else {
+        // Error interno del servidor
+        res.status(500).json({ message: 'Error deleting manual movement' });
       }
     }
   };

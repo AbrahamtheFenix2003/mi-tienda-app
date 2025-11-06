@@ -18,3 +18,7 @@ export const createManualMovement = (data: CreateManualMovementInput) => {
 export const updateManualMovement = (id: string, data: UpdateManualMovementInput) => {
   return api.put(`/cash/manual/${id}`, data);
 };
+
+export const deleteManualMovement = (id: string) => {
+  return api.delete(`/cash/manual/${id}`);
+};

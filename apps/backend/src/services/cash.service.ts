@@ -200,7 +200,65 @@ export class CashService {
   }
 
   async deleteManualMovement(id: string): Promise<void> {
-    // Restricción arquitectónica: No permitimos el borrado para mantener la integridad del saldo
-    throw new Error('La eliminación de movimientos no está permitida para mantener la integridad del saldo.');
+    return await prisma.$transaction(async (tx) => {
+      // Obtener el movimiento a eliminar
+      const movement = await tx.cashMovement.findUnique({
+        where: { id },
+      });
+
+      if (!movement) {
+        throw new Error('Movimiento no encontrado');
+      }
+
+      // Verificar que sea un movimiento manual (referenceId debe ser null)
+      if (movement.referenceId !== null) {
+        throw new Error('Solo se pueden eliminar movimientos manuales');
+      }
+
+      // Eliminar el movimiento
+      await tx.cashMovement.delete({
+        where: { id },
+      });
+
+      // Recalcular saldos de todos los movimientos posteriores
+      const subsequentMovements = await tx.cashMovement.findMany({
+        where: {
+          date: {
+            gte: movement.date,
+          },
+        },
+        orderBy: {
+          date: 'asc',
+        },
+      });
+
+      // Obtener el último saldo válido antes del movimiento eliminado
+      const previousMovement = await tx.cashMovement.findFirst({
+        where: {
+          date: {
+            lt: movement.date,
+          },
+        },
+        orderBy: {
+          date: 'desc',
+        },
+      });
+
+      let runningBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
+
+      // Recalcular saldos
+      for (const mov of subsequentMovements) {
+        const prevBalance = runningBalance;
+        runningBalance = prevBalance.plus(mov.amount);
+
+        await tx.cashMovement.update({
+          where: { id: mov.id },
+          data: {
+            previousBalance: prevBalance,
+            newBalance: runningBalance,
+          },
+        });
+      }
+    });
   }
 }
