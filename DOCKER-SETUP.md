@@ -95,7 +95,7 @@ Esto levantará:
 ### Acceder a la aplicación
 
 - **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8080/api/v1
+- **Backend API:** https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
 - **Login:** http://localhost:3000/login
 
 ---
@@ -196,7 +196,7 @@ chmod +x docker-dev.sh
 **Solución:** En `docker-compose.yml`, asegúrate de usar:
 ```yaml
 environment:
-  NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+  NEXT_PUBLIC_API_URL: https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
 ```
 
 **Nota:** Usa `localhost` para acceso desde el navegador, NO `backend`.
@@ -230,7 +230,7 @@ Ya están configuradas en `docker-compose.yml`:
 
 ```yaml
 # Frontend
-NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+NEXT_PUBLIC_API_URL: https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
 
 # Backend
 DATABASE_URL: postgresql://tienda_user:supersecretpassword123@postgres:5432/mi_tienda_db

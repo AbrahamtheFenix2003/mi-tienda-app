@@ -184,7 +184,7 @@ JWT_SECRET=your-secret-key
 **API Integration**:
 - Axios configured in `services/api.ts`
 - Service files: `authService.ts`, `productService.ts`, `purchaseService.ts`, `salesService.ts`, `dashboardService.ts`, etc.
-- Base URL: `http://localhost:8080/api/v1`
+- Base URL: `https://braholet-importaciones-core.global-atlas-solutions.com/api/v1`
 
 **Key Features**:
 - **Dashboard**: Statistics cards, sales charts (Recharts), category analysis
@@ -193,7 +193,7 @@ JWT_SECRET=your-secret-key
 - **Inventory**: FIFO lot tracking, stock movements, low stock alerts
 
 **Image Handling**:
-- Next.js Image component configured for `http://localhost:8080/uploads/**`
+- Next.js Image component configured for `https://braholet-importaciones-core.global-atlas-solutions.com/uploads/**`
 - Remote patterns configured in `next.config.ts`
 - Product model supports 4 image URLs
 
@@ -301,8 +301,8 @@ Products have `stockInicial` and `precioCompraInicial` fields for historical dat
 2. Run `docker compose up -d --build`
 3. Check logs: `docker compose logs -f`
 4. Access frontend at `http://localhost:3000`
-5. Backend API at `http://localhost:8080/api/v1`
-6. Health check: `http://localhost:8080/api/v1/health`
+5. Backend API at `https://braholet-importaciones-core.global-atlas-solutions.com/api/v1`
+6. Health check: `https://braholet-importaciones-core.global-atlas-solutions.com/api/v1/health`
 
 ## Common Workflows
 

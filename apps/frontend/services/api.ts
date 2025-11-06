@@ -4,7 +4,7 @@ import axios from 'axios';
 
 // 1. URL base de la API del backend
 // Usamos NEXT_PUBLIC_ para que la variable de entorno sea accesible en el cliente
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://braholet-importaciones-core.global-atlas-solutions.com/api/v1';
 
 // 2. Crea una instancia de Axios
 const api = axios.create({

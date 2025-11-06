@@ -191,7 +191,7 @@ El backend requiere las siguientes variables de entorno:
 
 Una vez que los contenedores estén en ejecución:
 
-- La API estará disponible en `http://localhost:8080`
+- La API estará disponible en `https://braholet-importaciones-core.global-atlas-solutions.com`
 - La base de datos estará disponible en `localhost:5432`
 
 ## Comandos Útiles

@@ -65,7 +65,7 @@ start_all() {
     print_info ""
     print_info "Accede a la aplicación en:"
     print_info "  - Frontend: http://localhost:3000"
-    print_info "  - Backend:  http://localhost:8080"
+    print_info "  - Backend:  https://braholet-importaciones-core.global-atlas-solutions.com"
 }
 
 # Función: Detener todo
@@ -225,7 +225,7 @@ ${GREEN}Ejemplos:${NC}
 
 ${GREEN}URLs:${NC}
   Frontend: ${BLUE}http://localhost:3000${NC}
-  Backend:  ${BLUE}http://localhost:8080${NC}
+  Backend:  ${BLUE}https://braholet-importaciones-core.global-atlas-solutions.com${NC}
 
 ${GREEN}Documentación completa:${NC}
   Ver ${BLUE}DOCKER.md${NC} para más información

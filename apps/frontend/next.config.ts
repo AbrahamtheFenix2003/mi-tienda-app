@@ -63,7 +63,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/uploads/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/uploads/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://braholet-importaciones-core.global-atlas-solutions.com'}/uploads/:path*`,
       },
     ];
   },

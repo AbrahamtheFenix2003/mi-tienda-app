@@ -15,7 +15,7 @@ const app: Application = express();
 // Configuración de CORS dinámica basada en variables de entorno
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000', 'http://localhost:8080'];
+  : ['http://localhost:3000', 'https://braholet-importaciones-core.global-atlas-solutions.com'];
 
 app.use(cors({
   origin: (origin, callback) => {

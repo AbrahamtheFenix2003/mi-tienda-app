@@ -80,7 +80,7 @@ El proyecto usa **3 contenedores** que se comunican a través de una red interna
 │                                                      │
 │  Acceso desde navegador:                            │
 │  http://localhost:3000 → Frontend                   │
-│  http://localhost:8080 → Backend API                │
+│  https://braholet-importaciones-core.global-atlas-solutions.com → Backend API                │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -158,7 +158,7 @@ docker compose ps
 Abre tu navegador y visita:
 
 - **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8080/api/v1
+- **Backend API:** https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
 - **Login:** http://localhost:3000/login
 
 ---
@@ -281,7 +281,7 @@ environment:
   NEXT_PUBLIC_API_URL: http://backend:8080/api/v1
 
   # Para desarrollo local fuera de Docker, usar:
-  # NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+  # NEXT_PUBLIC_API_URL: https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
 
   NODE_ENV: production
   NEXT_TELEMETRY_DISABLED: 1
@@ -450,7 +450,7 @@ server {
 
     # Backend API
     location /api/ {
-        proxy_pass http://localhost:8080;
+        proxy_pass https://braholet-importaciones-core.global-atlas-solutions.com;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -458,7 +458,7 @@ server {
 
     # Uploads
     location /uploads/ {
-        proxy_pass http://localhost:8080/uploads/;
+        proxy_pass https://braholet-importaciones-core.global-atlas-solutions.com/uploads/;
     }
 }
 ```
@@ -518,7 +518,7 @@ docker compose logs backend
 # 3. Si estás accediendo desde el navegador, usar localhost
 # En docker-compose.yml, para desarrollo local:
 environment:
-  NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+  NEXT_PUBLIC_API_URL: https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
 # NO usar: http://backend:8080 (esto solo funciona entre contenedores)
 
 # 4. Verificar red

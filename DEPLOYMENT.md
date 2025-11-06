@@ -98,9 +98,9 @@ cp .env.example .env.local
 
 Configuración típica:
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
-NEXT_INTERNAL_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_API_URL=https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
+NEXT_PUBLIC_API_BASE_URL=https://braholet-importaciones-core.global-atlas-solutions.com
+NEXT_INTERNAL_API_BASE_URL=https://braholet-importaciones-core.global-atlas-solutions.com
 NEXT_TELEMETRY_DISABLED=1
 ```
 
@@ -151,8 +151,8 @@ npm run dev
 ### 5. Acceder a la aplicación
 
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8080/api/v1
-- Health check: http://localhost:8080/api/v1/health
+- Backend API: https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
+- Health check: https://braholet-importaciones-core.global-atlas-solutions.com/api/v1/health
 
 ---
 
@@ -193,7 +193,7 @@ docker compose exec backend npm run seed
 ### 5. Acceder a la aplicación
 
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8080/api/v1
+- Backend API: https://braholet-importaciones-core.global-atlas-solutions.com/api/v1
 
 ### 6. Detener servicios
 
@@ -285,7 +285,7 @@ server {
     server_name api.your-domain.com;
 
     location / {
-        proxy_pass http://localhost:8080;
+        proxy_pass https://braholet-importaciones-core.global-atlas-solutions.com;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

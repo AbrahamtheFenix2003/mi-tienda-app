@@ -6,7 +6,7 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
 
 - Monorepo con workspaces: frontend, backend y tipos compartidos.
 - Puertos:
-  - Backend: http://localhost:8080
+  - Backend: https://braholet-importaciones-core.global-atlas-solutions.com
   - Frontend: http://localhost:3000
 
 ### Backend (Express + TypeScript + Prisma)
@@ -46,7 +46,7 @@ Visión general del monorepo, puntos de entrada, relaciones de componentes y flu
   - Axios configurado con baseURL y helper para Authorization:
     - [services/api.ts](apps/frontend/services/api.ts:1)
 - Imágenes remotas:
-  - Patrón remoto para http://localhost:8080/uploads/**:
+  - Patrón remoto para https://braholet-importaciones-core.global-atlas-solutions.com/uploads/**:
     - [next.config.ts](apps/frontend/next.config.ts:3)
 
 ### Tipos Compartidos (packages/types)

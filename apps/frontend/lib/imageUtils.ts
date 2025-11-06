@@ -25,14 +25,14 @@ export const getImageUrl = (imagePath: string | null | undefined): string => {
     // En producción, verificar si estamos en el navegador (cliente) o en el servidor
     if (typeof window !== 'undefined') {
       // En el navegador (cliente), usar la URL pública del API
-      baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+      baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://braholet-importaciones-core.global-atlas-solutions.com';
     } else {
       // En el servidor, usar la URL interna del backend (para Docker/K8s)
-      baseUrl = process.env.NEXT_INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+      baseUrl = process.env.NEXT_INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://braholet-importaciones-core.global-atlas-solutions.com';
     }
   } else {
     // En desarrollo, usar la URL pública del API
-    baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+    baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://braholet-importaciones-core.global-atlas-solutions.com';
   }
 
   // Si el path ya incluye /uploads/, evitar duplicación
@@ -48,7 +48,7 @@ export const getImageUrl = (imagePath: string | null | undefined): string => {
  * @returns URL base de la API
  */
 export const getApiUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+  return process.env.NEXT_PUBLIC_API_URL || 'https://braholet-importaciones-core.global-atlas-solutions.com/api/v1';
 };
 
 /**
@@ -103,7 +103,7 @@ export const isLocalUrl = (url: string): boolean => {
   if (!url.startsWith('http')) return true;
 
   // Obtener los hosts configurados
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://braholet-importaciones-core.global-atlas-solutions.com';
   const internalApiBaseUrl = process.env.NEXT_INTERNAL_API_BASE_URL || '';
 
   // Extraer hostnames de las URLs configuradas
