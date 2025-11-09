@@ -1,6 +1,6 @@
 'use client'; // Necesario para usar hooks en esta página
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchProducts, updateProduct, deleteProduct, uploadProductImageByIndex, deleteProductImageByIndex, getProductStockLots } from '@/services/productService';
 import { fetchCategories } from '@/services/categoryService';
@@ -8,6 +8,7 @@ import { ProductTable } from '@/components/admin/ProductTable';
 import { EditProductModal } from '@/components/admin/EditProductModal';
 import { DeleteProductModal } from '@/components/admin/DeleteProductModal';
 import { ProductDetailsModal } from '@/components/admin/ProductDetailsModal';
+import { ProductFilters } from '@/components/admin/ProductFilters';
 import { Loader2, AlertTriangle, PackagePlus } from 'lucide-react';
 import Link from 'next/link';
 import { Product, ProductFormData, StockLot } from '@mi-tienda/types';
@@ -29,6 +30,11 @@ export default function ProductosPage() {
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const [stockLots, setStockLots] = useState<StockLot[]>([]);
   const [isLoadingLots, setIsLoadingLots] = useState(false);
+  
+  // Estados para filtros y ordenamiento
+  const [sortBy, setSortBy] = useState<string>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
 
   // Queries
   const { data: products, isLoading: isLoadingProducts, error: errorProducts } = useQuery({
@@ -40,6 +46,51 @@ export default function ProductosPage() {
     queryKey: QUERY_KEYS.CATEGORIES,
     queryFn: fetchCategories,
   });
+
+  // Filtrar y ordenar productos
+  const filteredAndSortedProducts = useMemo(() => {
+    if (!products) return [];
+    
+    let result = [...products];
+    
+    // Aplicar filtro por categoría
+    if (categoryFilter !== null) {
+      result = result.filter(product => product.categoryId === categoryFilter);
+    }
+    
+    // Aplicar ordenamiento
+    result.sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'category':
+          aValue = a.category?.name.toLowerCase() || '';
+          bValue = b.category?.name.toLowerCase() || '';
+          break;
+        case 'stock':
+          aValue = a.stock;
+          bValue = b.stock;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) {
+        return sortOrder === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortOrder === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+    
+    return result;
+  }, [products, categoryFilter, sortBy, sortOrder]);
 
   // Mutación para subir una imagen individual por índice
   const uploadImageByIndexMutation = useMutation<Product, unknown, { productId: number; imageFile: File; index: number }>({
@@ -85,7 +136,7 @@ export default function ProductosPage() {
       alert(`Producto "${updatedProduct.name}" actualizado.`);
     },
     onError: (error: unknown) => {
-      const e = error as any;
+      const e = error as Error & { fieldErrors?: Record<string, string>; message?: string };
       console.error('Error al actualizar:', e);
 
       // Si hay errores por campo, mostrarlos en el formulario del modal
@@ -148,12 +199,22 @@ export default function ProductosPage() {
       }
 
       return (
-        <ProductTable
-          products={products}
-          onView={handleViewDetails}
-          onEdit={(p: Product) => { setSelectedProduct(p); setIsEditModalOpen(true); }}
-          onDelete={(p: Product) => { setSelectedProduct(p); setIsDeleteModalOpen(true); }}
-        />
+        <>
+          <ProductFilters
+            onSortChange={(newSortBy, newSortOrder) => {
+              setSortBy(newSortBy);
+              setSortOrder(newSortOrder);
+            }}
+            onCategoryFilter={(categoryId) => setCategoryFilter(categoryId)}
+            categories={categories || []}
+          />
+          <ProductTable
+            products={filteredAndSortedProducts}
+            onView={handleViewDetails}
+            onEdit={(p: Product) => { setSelectedProduct(p); setIsEditModalOpen(true); }}
+            onDelete={(p: Product) => { setSelectedProduct(p); setIsDeleteModalOpen(true); }}
+          />
+        </>
       );
     }
 
