@@ -52,6 +52,14 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [purchasePrice, setPurchasePrice] = useState('');
 
+  // Prevenir envío del formulario con Enter en inputs específicos
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   // Agregar producto a la cesta
   const addToCart = () => {
     if (!selectedProduct) return;
@@ -333,6 +341,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
                       min="1"
                       value={quantity}
                       onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                      onKeyDown={handleKeyDown}
                       className={getFieldClasses()}
                     />
                   </div>
@@ -348,6 +357,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
                       step="0.01"
                       value={purchasePrice}
                       onChange={(e) => setPurchasePrice(e.target.value)}
+                      onKeyDown={handleKeyDown}
                       placeholder="0.00"
                       className={getFieldClasses()}
                     />

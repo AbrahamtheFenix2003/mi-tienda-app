@@ -27,6 +27,14 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
   onUpdateQuantity,
   onUpdatePrice,
 }) => {
+  // Prevenir envío del formulario con Enter en inputs del carrito
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   // Calcular total de la compra
   const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
 
@@ -85,6 +93,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
                             const newQuantity = parseInt(e.target.value) || 1;
                             onUpdateQuantity(index, Math.max(1, newQuantity));
                           }}
+                          onKeyDown={handleKeyDown}
                           className="w-16 px-2 py-1 text-xs focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
                         />
                       </div>
@@ -100,6 +109,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
                             const newPrice = parseFloat(e.target.value) || 0.01;
                             onUpdatePrice(index, Math.max(0.01, newPrice));
                           }}
+                          onKeyDown={handleKeyDown}
                           className="w-20 px-2 py-1 text-xs focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
                         />
                       </div>
