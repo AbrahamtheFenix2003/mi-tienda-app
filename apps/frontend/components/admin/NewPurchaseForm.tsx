@@ -145,6 +145,31 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
     setValue('items', formItems, { shouldValidate: true });
   };
 
+  // Actualizar precio en la cesta
+  const updateCartPrice = (index: number, newPrice: number) => {
+    const updatedItems = cartItems.map((item, i) => {
+      if (i === index) {
+        return {
+          ...item,
+          purchasePrice: newPrice,
+          subtotal: item.quantity * newPrice,
+        };
+      }
+      return item;
+    });
+    setCartItems(updatedItems);
+    
+    // Sincronizar con el formulario
+    const formItems = updatedItems.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      purchasePrice: item.purchasePrice,
+      loteId: null,
+      fechaVencimiento: null,
+    }));
+    setValue('items', formItems, { shouldValidate: true });
+  };
+
   // Manejar envío del formulario
   const handleFormSubmit = handleSubmit((data) => {
     if (cartItems.length === 0) {
@@ -362,6 +387,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
             items={cartItems}
             onRemoveItem={removeFromCart}
             onUpdateQuantity={updateCartQuantity}
+            onUpdatePrice={updateCartPrice}
           />
         )}
 

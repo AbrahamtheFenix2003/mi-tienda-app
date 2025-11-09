@@ -18,12 +18,14 @@ interface ShoppingCartProps {
   items: CartItem[];
   onRemoveItem: (index: number) => void;
   onUpdateQuantity: (index: number, quantity: number) => void;
+  onUpdatePrice: (index: number, price: number) => void;
 }
 
 export const ShoppingCart: React.FC<ShoppingCartProps> = ({
   items,
   onRemoveItem,
   onUpdateQuantity,
+  onUpdatePrice,
 }) => {
   // Calcular total de la compra
   const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
@@ -87,8 +89,19 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
                         />
                       </div>
                       
-                      <div className="text-xs text-gray-600">
-                        S/ {item.purchasePrice.toFixed(2)} c/u
+                      <div className="flex items-center space-x-2">
+                        <label className="text-xs text-gray-600">Precio:</label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={item.purchasePrice}
+                          onChange={(e) => {
+                            const newPrice = parseFloat(e.target.value) || 0.01;
+                            onUpdatePrice(index, Math.max(0.01, newPrice));
+                          }}
+                          className="w-20 px-2 py-1 text-xs focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                        />
                       </div>
                     </div>
                   </div>
