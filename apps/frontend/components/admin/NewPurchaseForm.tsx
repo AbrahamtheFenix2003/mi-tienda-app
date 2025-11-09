@@ -398,6 +398,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
             onRemoveItem={removeFromCart}
             onUpdateQuantity={updateCartQuantity}
             onUpdatePrice={updateCartPrice}
+            allowPriceEdit={true}
           />
         )}
 
