@@ -139,9 +139,18 @@ export const createProduct = async (data: ProductData): Promise<Product> => {
  * @param data Objeto con los datos a actualizar.
  */
 export const updateProduct = async (id: number, data: Partial<ProductData>): Promise<Product> => {
+  // Hacemos una copia de los datos para poder modificarlos
+  const updateData = { ...data };
+
+  // ¡Clave! Eliminamos el campo 'stock' del objeto de datos.
+  // Esto previene que se sobrescriba accidentalmente.
+  if ('stock' in updateData) {
+    delete (updateData as Partial<ProductData>).stock;
+  }
+
   const product = await prisma.product.update({
     where: { id },
-    data,
+    data: updateData, // Usamos los datos limpios
     include: productInclude,
   });
 
