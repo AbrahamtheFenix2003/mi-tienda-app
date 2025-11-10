@@ -115,14 +115,12 @@ export const SaleForm = ({ form, onSubmit, isLoading, products }: SaleFormProps)
     setValue('items', updatedItems);
   };
 
-  // Actualizar precio de un item con validación de precio mínimo
+  // Actualizar precio de un item sin restricción de precio mínimo
   const updateItemPrice = (index: number, newPrice: number) => {
     const currentItems = watch('items');
-    const product = products.find(p => p.id === currentItems[index].productId);
-    const minPrice = product?.price ? parseFloat(product.price) * 0.5 : 0.01; // Mínimo 50% del precio original
     
-    // Validar que el precio no sea menor al mínimo permitido
-    const validatedPrice = Math.max(minPrice, newPrice);
+    // Validar que el precio sea mayor que 0
+    const validatedPrice = Math.max(0.01, newPrice);
     
     const updatedItems = [...currentItems];
     updatedItems[index] = {
