@@ -110,7 +110,9 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({
                             value={item.purchasePrice}
                             onChange={(e) => {
                               const newPrice = parseFloat(e.target.value) || 0.01;
-                              onUpdatePrice(index, Math.max(0.01, newPrice));
+                              if (onUpdatePrice) {
+                                onUpdatePrice(index, Math.max(0.01, newPrice));
+                              }
                             }}
                             onKeyDown={handleKeyDown}
                             className="w-20 px-2 py-1 text-xs focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
