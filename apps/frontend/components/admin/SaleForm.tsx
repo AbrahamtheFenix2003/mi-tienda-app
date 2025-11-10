@@ -115,6 +115,23 @@ export const SaleForm = ({ form, onSubmit, isLoading, products }: SaleFormProps)
     setValue('items', updatedItems);
   };
 
+  // Actualizar precio de un item con validación de precio mínimo
+  const updateItemPrice = (index: number, newPrice: number) => {
+    const currentItems = watch('items');
+    const product = products.find(p => p.id === currentItems[index].productId);
+    const minPrice = product?.price ? parseFloat(product.price) * 0.5 : 0.01; // Mínimo 50% del precio original
+    
+    // Validar que el precio no sea menor al mínimo permitido
+    const validatedPrice = Math.max(minPrice, newPrice);
+    
+    const updatedItems = [...currentItems];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      price: validatedPrice
+    };
+    setValue('items', updatedItems);
+  };
+
   // Calcular subtotal para un item
   const calculateSubtotal = (item: { quantity?: number; price?: number }) => {
     return (item.quantity || 0) * (item.price || 0);
@@ -227,6 +244,8 @@ export const SaleForm = ({ form, onSubmit, isLoading, products }: SaleFormProps)
           items={cartItems}
           onRemoveItem={remove}
           onUpdateQuantity={updateItemQuantity}
+          onUpdatePrice={updateItemPrice}
+          allowPriceEdit={true}
         />
         
         {/* Total de la venta */}
