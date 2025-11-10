@@ -19,9 +19,9 @@ export default function CategorySidebar({
   // Count products by category
   const getProductCount = (categoryId: number | null) => {
     if (categoryId === null) {
-      return products.filter(p => p.isActive).length;
+      return products.filter(p => p.isActive && p.stock > 0).length;
     }
-    return products.filter(p => p.categoryId === categoryId && p.isActive).length;
+    return products.filter(p => p.categoryId === categoryId && p.isActive && p.stock > 0).length;
   };
 
   return (

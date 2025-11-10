@@ -42,9 +42,10 @@ export class CashService {
   async getCashMovements(): Promise<CashMovementWithRelations[]> {
     const movements = await prisma.cashMovement.findMany({
       include: cashMovementInclude,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { date: 'desc' },
+        { createdAt: 'desc' }
+      ],
     });
 
     return movements.map(mapCashMovementFromPrisma);
@@ -52,12 +53,21 @@ export class CashService {
 
   async createManualMovement(data: CreateManualMovementInput, userId: string): Promise<CashMovementWithRelations> {
     return await prisma.$transaction(async (tx) => {
-      // Obtener el último movimiento para calcular el saldo anterior
-      const lastMovement = await tx.cashMovement.findFirst({
-        orderBy: { date: 'desc' },
+      const movementDate = new Date(data.date);
+      
+      // Obtener el movimiento inmediatamente anterior en fecha
+      const previousMovement = await tx.cashMovement.findFirst({
+        where: {
+          date: {
+            lt: movementDate,
+          },
+        },
+        orderBy: {
+          date: 'desc',
+        },
       });
 
-      const previousBalance = lastMovement ? lastMovement.newBalance : new Prisma.Decimal(0);
+      const previousBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
       
       // Calcular el monto del movimiento (positivo para entradas, negativo para salidas)
       const movementAmount = data.type === 'SALIDA'
@@ -76,13 +86,43 @@ export class CashService {
           newBalance: newBalance,
           userId: userId,
           referenceId: null, // Marca como movimiento manual
-          date: new Date(data.date),
+          date: movementDate,
           description: data.description,
           category: data.category,
           paymentMethod: data.paymentMethod as PaymentMethod,
         },
         include: cashMovementInclude,
       });
+
+      // Recalcular saldos de todos los movimientos posteriores
+      const subsequentMovements = await tx.cashMovement.findMany({
+        where: {
+          date: {
+            gte: movementDate,
+          },
+          id: {
+            not: newMovement.id,
+          },
+        },
+        orderBy: {
+          date: 'asc',
+          createdAt: 'asc',
+        },
+      });
+
+      let runningBalance = newBalance;
+      for (const movement of subsequentMovements) {
+        const prevBalance = runningBalance;
+        runningBalance = prevBalance.plus(movement.amount);
+
+        await tx.cashMovement.update({
+          where: { id: movement.id },
+          data: {
+            previousBalance: prevBalance,
+            newBalance: runningBalance,
+          },
+        });
+      }
 
       return mapCashMovementFromPrisma(newMovement);
     });
@@ -163,11 +203,15 @@ export class CashService {
         const subsequentMovements = await tx.cashMovement.findMany({
           where: {
             date: {
-              gt: currentMovement.date,
+              gte: currentMovement.date,
+            },
+            id: {
+              not: updatedMovement.id,
             },
           },
           orderBy: {
             date: 'asc',
+            createdAt: 'asc',
           },
         });
 
@@ -226,9 +270,13 @@ export class CashService {
           date: {
             gte: movement.date,
           },
+          id: {
+            not: movement.id,
+          },
         },
         orderBy: {
           date: 'asc',
+          createdAt: 'asc',
         },
       });
 
@@ -288,10 +336,14 @@ export class CashService {
         where: {
           date: {
             gte: movementToDelete.date
+          },
+          id: {
+            not: movementToDelete.id
           }
         },
         orderBy: {
-          date: 'asc'
+          date: 'asc',
+          createdAt: 'asc'
         }
       });
 

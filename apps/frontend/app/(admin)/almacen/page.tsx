@@ -1,17 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, AlertTriangle, Warehouse, Boxes, History, PackageSearch } from 'lucide-react';
 import { fetchStockLots, fetchStockMovements } from '@/services/inventoryService';
 import { fetchProducts } from '@/services/productService';
+import { fetchCategories } from '@/services/categoryService';
 import { StockLot, StockMovement, Product } from '@mi-tienda/types';
 import { StockLotsTable } from '@/components/admin/StockLotsTable';
 import StockMovementsTable from '@/components/admin/StockMovementsTable';
+import { InventoryTable } from '@/components/admin/InventoryTable';
+import { InventoryFilters } from '@/components/admin/InventoryFilters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ProductDetailsModal } from '@/components/admin/ProductDetailsModal';
 
 function AlmacenPage() {
-  const [activeTab, setActiveTab] = useState<'resumen' | 'lotes' | 'movimientos'>('lotes');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'lotes' | 'movimientos'>('resumen');
+  
+  // Estados para filtros y ordenamiento
+  const [sortBy, setSortBy] = useState<string>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
+  const [searchFilter, setSearchFilter] = useState<string>('');
+  const [stockFilter, setStockFilter] = useState<string>('all');
+  
+  // Estado para modal de detalles
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Query de Lotes
   const { 
@@ -42,8 +57,89 @@ function AlmacenPage() {
     queryFn: fetchProducts,
   });
 
+  const { data: categoriesData, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories,
+  });
+
+  // Filtrar y ordenar productos
+  const filteredAndSortedProducts = useMemo(() => {
+    if (!productsData) return [];
+    
+    let result = [...productsData];
+    
+    // Aplicar filtro de búsqueda
+    if (searchFilter.trim() !== '') {
+      const searchLower = searchFilter.toLowerCase().trim();
+      result = result.filter(product =>
+        product.name.toLowerCase().includes(searchLower) ||
+        product.code.toLowerCase().includes(searchLower) ||
+        (product.category?.name && product.category.name.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Aplicar filtro por categoría
+    if (categoryFilter !== null) {
+      result = result.filter(product => product.categoryId === categoryFilter);
+    }
+    
+    // Aplicar filtro por stock
+    if (stockFilter !== 'all') {
+      result = result.filter(product => {
+        const stock = product.stock || 0;
+        switch (stockFilter) {
+          case 'available':
+            return stock > 0;
+          case 'low':
+            return stock > 0 && stock < 10;
+          case 'out':
+            return stock === 0;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Aplicar ordenamiento
+    result.sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'category':
+          aValue = a.category?.name.toLowerCase() || '';
+          bValue = b.category?.name.toLowerCase() || '';
+          break;
+        case 'stock':
+          aValue = a.stock;
+          bValue = b.stock;
+          break;
+        case 'totalValue':
+          aValue = parseFloat(a.price) * (a.stock || 0);
+          bValue = parseFloat(b.price) * (b.stock || 0);
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) {
+        return sortOrder === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortOrder === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+    
+    return result;
+  }, [productsData, categoryFilter, sortBy, sortOrder, searchFilter, stockFilter]);
+
   const renderSummaryContent = () => {
-    if (isLoadingProducts) {
+    if (isLoadingProducts || isLoadingCategories) {
       return (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -78,10 +174,15 @@ function AlmacenPage() {
 
     const totalProducts = productsData.length;
     const totalStock = productsData.reduce((acc, product) => acc + (product.stock ?? 0), 0);
+    const totalValue = productsData.reduce((acc, product) => {
+      const unitCost = product.acquisitionCost ? parseFloat(product.acquisitionCost) : parseFloat(product.price);
+      return acc + (unitCost * (product.stock ?? 0));
+    }, 0);
 
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* Tarjetas de resumen */}
+        <div className="grid gap-4 sm:grid-cols-3">
           <Card>
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Total de Productos</CardTitle>
@@ -102,31 +203,37 @@ function AlmacenPage() {
               <p className="mt-1 text-sm text-gray-500">Suma de stock disponible</p>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <CardTitle>Valor Total del Inventario</CardTitle>
+              <Warehouse className="w-6 h-6 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-semibold text-gray-900">
+                S/ {isNaN(totalValue) ? '0.00' : totalValue.toFixed(2)}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">Valor total del stock actual</p>
+            </CardContent>
+          </Card>
         </div>
 
+        {/* Filtros y tabla */}
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Detalle por producto</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {productsData.map((product) => (
-              <Card key={product.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{product.name}</CardTitle>
-                  <p className="text-sm text-gray-500">Código: {product.code}</p>
-                </CardHeader>
-                <CardContent className="pt-2">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-gray-500">Stock disponible</span>
-                    <span className="text-2xl font-semibold text-gray-900">{product.stock}</span>
-                  </div>
-                  {product.category?.name && (
-                    <p className="mt-2 text-sm text-gray-500">
-                      Categoría: <span className="text-gray-700">{product.category.name}</span>
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <InventoryFilters
+            onSortChange={(newSortBy, newSortOrder) => {
+              setSortBy(newSortBy);
+              setSortOrder(newSortOrder);
+            }}
+            onCategoryFilter={(categoryId) => setCategoryFilter(categoryId)}
+            onSearchFilter={(searchTerm) => setSearchFilter(searchTerm)}
+            onStockFilter={(stockFilterValue) => setStockFilter(stockFilterValue)}
+            categories={categoriesData || []}
+          />
+          <InventoryTable
+            products={filteredAndSortedProducts}
+            onView={handleViewDetails}
+          />
         </div>
       </div>
     );
@@ -226,6 +333,11 @@ function AlmacenPage() {
     );
   };
 
+  const handleViewDetails = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDetailsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Encabezado de la página */}
@@ -279,6 +391,18 @@ function AlmacenPage() {
         {activeTab === 'lotes' && renderLotsContent()}
         {activeTab === 'movimientos' && renderMovementsContent()}
       </div>
+
+      {/* Modal de detalles del producto */}
+      <ProductDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        product={selectedProduct}
+        stockLots={[]}
+        isLoading={false}
+      />
     </div>
   );
 }

@@ -374,6 +374,11 @@ export const updatePurchase = async (purchaseId: string, data: PurchaseFormData,
               quantity: {
                 [diff > 0 ? 'increment' : 'decrement']: Math.abs(diff)
               },
+              // --- NUEVO: Actualizar status automáticamente ---
+              status: (matchingLot.quantity + (diff > 0 ? Math.abs(diff) : -Math.abs(diff))) > 0
+                ? LotStatus.ACTIVO
+                : LotStatus.AGOTADO,
+              // --- FIN NUEVO ---
               originalQuantity: newQuantity,
               costPerUnit: newPrice,
               expiryDate: newItemData.fechaVencimiento ?? null,

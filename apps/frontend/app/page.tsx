@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Loader2, AlertTriangle, Sparkles, Package } from 'lucide-react';
+import { Loader2, AlertTriangle, Sparkles, Package, Menu, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCategories } from '@/services/categoryService';
 import { fetchProducts } from '@/services/productService';
@@ -20,6 +20,7 @@ export default function HomePage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
@@ -35,7 +36,7 @@ export default function HomePage() {
 
   // Filter products by category and search query
   const filteredProducts = useMemo(() => {
-    let filtered = products.filter(p => p.isActive);
+    let filtered = products.filter(p => p.isActive && p.stock > 0);
 
     // Filter by category
     if (selectedCategoryId !== null) {
@@ -62,13 +63,18 @@ export default function HomePage() {
     if (selectedCategoryId !== null || searchQuery.trim().length > 0) {
       return [];
     }
-    return products.filter(p => p.isActive && p.isFeatured).slice(0, 4);
+    return products.filter(p => p.isActive && p.stock > 0 && p.isFeatured).slice(0, 4);
   }, [products, selectedCategoryId, searchQuery]);
 
   // Handle product selection
   const handleProductSelect = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
+  };
+
+  const handleCategorySelect = (categoryId: number | null) => {
+    setSelectedCategoryId(categoryId);
+    setIsSidebarOpen(false);
   };
 
   const handleCloseModal = () => {
@@ -89,7 +95,7 @@ export default function HomePage() {
       />
 
       {/* Main Content */}
-  <div className="max-w-7xl mr-auto px-4 sm:px-6 lg:pl-4 lg:pr-8 py-8">
+      <div className="w-full max-w-[2000px] ml-0 mr-auto pl-4 pr-4 sm:pl-6 sm:pr-10 lg:pl-4 lg:pr-12 xl:pr-16 2xl:pr-24 py-8">
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
@@ -110,22 +116,38 @@ export default function HomePage() {
 
         {/* Main Layout: Sidebar + Products */}
         {!isLoading && !productsError && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <>
+            {/* Mobile Filters Button */}
+            <div className="mb-4 flex items-center justify-between lg:hidden">
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-rose-400 hover:text-rose-600"
+              >
+                <Menu className="h-4 w-4" />
+                Categorías
+              </button>
+              <span className="text-xs text-gray-500">
+                {categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:[grid-template-columns:320px_minmax(0,1fr)]">
             {/* Sidebar */}
-            <aside className="lg:col-span-1">
+            <aside className="hidden lg:block">
               <div className="lg:sticky lg:top-24 space-y-6">
                 <CategorySidebar
                   categories={categories}
                   products={products}
                   selectedCategoryId={selectedCategoryId}
-                  onCategorySelect={setSelectedCategoryId}
+                  onCategorySelect={handleCategorySelect}
                 />
                 <ContactInfo />
               </div>
             </aside>
 
             {/* Products Section */}
-            <main className="lg:col-span-3 space-y-8">
+            <main className="space-y-8">
               {/* Featured Products Section */}
               {featuredProducts.length > 0 && (
                 <section>
@@ -133,7 +155,7 @@ export default function HomePage() {
                     <Sparkles className="h-6 w-6 text-rose-500" />
                     <h2 className="text-2xl font-bold text-gray-900">Productos Destacados</h2>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 min-[1400px]:grid-cols-5 min-[1800px]:grid-cols-6 gap-4">
                     {featuredProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -162,7 +184,7 @@ export default function HomePage() {
 
                 {/* Products Grid */}
                 {filteredProducts.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 min-[1400px]:grid-cols-5 min-[1800px]:grid-cols-6 gap-4">
                     {filteredProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -186,11 +208,47 @@ export default function HomePage() {
                     </p>
                   </div>
                 )}
-              </section>
-            </main>
+            </section>
+          </main>
           </div>
+        </>
         )}
       </div>
+
+      {/* Mobile Sidebar Drawer */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 z-40 flex justify-start lg:hidden" role="dialog" aria-modal="true">
+          <div
+            className="fixed inset-0 bg-black/40 transition-opacity"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+          <div className="relative mr-auto flex h-full w-80 max-w-full flex-col bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">Filtros</p>
+                <h3 className="text-base font-semibold text-gray-900">Categorías</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(false)}
+                className="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                aria-label="Cerrar filtros"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4">
+              <CategorySidebar
+                categories={categories}
+                products={products}
+                selectedCategoryId={selectedCategoryId}
+                onCategorySelect={handleCategorySelect}
+              />
+              <ContactInfo />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Product Detail Modal */}
       <ProductDetailModal
