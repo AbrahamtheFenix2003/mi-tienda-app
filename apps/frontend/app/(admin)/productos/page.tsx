@@ -35,6 +35,7 @@ export default function ProductosPage() {
   const [sortBy, setSortBy] = useState<string>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
+  const [searchFilter, setSearchFilter] = useState<string>('');
 
   // Queries
   const { data: products, isLoading: isLoadingProducts, error: errorProducts } = useQuery({
@@ -52,6 +53,16 @@ export default function ProductosPage() {
     if (!products) return [];
     
     let result = [...products];
+    
+    // Aplicar filtro de búsqueda
+    if (searchFilter.trim() !== '') {
+      const searchLower = searchFilter.toLowerCase().trim();
+      result = result.filter(product =>
+        product.name.toLowerCase().includes(searchLower) ||
+        product.code.toLowerCase().includes(searchLower) ||
+        (product.category?.name && product.category.name.toLowerCase().includes(searchLower))
+      );
+    }
     
     // Aplicar filtro por categoría
     if (categoryFilter !== null) {
@@ -90,7 +101,7 @@ export default function ProductosPage() {
     });
     
     return result;
-  }, [products, categoryFilter, sortBy, sortOrder]);
+  }, [products, categoryFilter, sortBy, sortOrder, searchFilter]);
 
   // Mutación para subir una imagen individual por índice
   const uploadImageByIndexMutation = useMutation<Product, unknown, { productId: number; imageFile: File; index: number }>({
@@ -206,6 +217,7 @@ export default function ProductosPage() {
               setSortOrder(newSortOrder);
             }}
             onCategoryFilter={(categoryId) => setCategoryFilter(categoryId)}
+            onSearchFilter={(searchTerm) => setSearchFilter(searchTerm)}
             categories={categories || []}
           />
           <ProductTable

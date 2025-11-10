@@ -261,4 +261,73 @@ export class CashService {
       }
     });
   }
+
+  /**
+   * Elimina un movimiento de caja específico y recalcula todos los saldos posteriores
+   * Usado para anulación de ventas/compras donde se quiere eliminar completamente el movimiento original
+   */
+  async deleteCashMovementAndRecalculate(referenceId: string): Promise<void> {
+    return await prisma.$transaction(async (tx) => {
+      // Buscar el movimiento de caja asociado a la venta/compra
+      const movementToDelete = await tx.cashMovement.findFirst({
+        where: { referenceId }
+      });
+
+      if (!movementToDelete) {
+        // No hay movimiento de caja asociado, no hacer nada
+        return;
+      }
+
+      // Eliminar el movimiento de caja
+      await tx.cashMovement.delete({
+        where: { id: movementToDelete.id }
+      });
+
+      // Recalcular saldos de todos los movimientos posteriores
+      const subsequentMovements = await tx.cashMovement.findMany({
+        where: {
+          date: {
+            gte: movementToDelete.date
+          }
+        },
+        orderBy: {
+          date: 'asc'
+        }
+      });
+
+      // Obtener el último saldo válido antes del movimiento eliminado
+      const previousMovement = await tx.cashMovement.findFirst({
+        where: {
+          date: {
+            lt: movementToDelete.date
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      });
+
+      let runningBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
+
+      // Recalcular saldos para todos los movimientos posteriores
+      for (const movement of subsequentMovements) {
+        const prevBalance = runningBalance;
+        
+        // Calcular nuevo saldo basado en el tipo de movimiento
+        if (movement.type === CashMovementType.ENTRADA) {
+          runningBalance = prevBalance.plus(movement.amount);
+        } else {
+          runningBalance = prevBalance.sub(movement.amount);
+        }
+
+        await tx.cashMovement.update({
+          where: { id: movement.id },
+          data: {
+            previousBalance: prevBalance,
+            newBalance: runningBalance
+          }
+        });
+      }
+    });
+  }
 }

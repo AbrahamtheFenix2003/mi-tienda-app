@@ -3,22 +3,25 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Filter, SortAsc, SortDesc } from 'lucide-react';
+import { Filter, SortAsc, SortDesc, Search } from 'lucide-react';
 
 interface ProductFiltersProps {
   onSortChange: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   onCategoryFilter: (categoryId: number | null) => void;
+  onSearchFilter: (searchTerm: string) => void;
   categories: { id: number; name: string }[];
 }
 
 export const ProductFilters: React.FC<ProductFiltersProps> = ({
   onSortChange,
   onCategoryFilter,
+  onSearchFilter,
   categories,
 }) => {
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleSortChange = (newSortBy: string) => {
     const newSortOrder = sortBy === newSortBy && sortOrder === 'asc' ? 'desc' : 'asc';
@@ -33,6 +36,17 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
     onCategoryFilter(categoryId);
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSearchTerm = e.target.value;
+    setSearchTerm(newSearchTerm);
+    onSearchFilter(newSearchTerm);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    onSearchFilter('');
+  };
+
   return (
     <div className="flex flex-col sm:flex-row gap-4 mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="flex items-center">
@@ -41,6 +55,31 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
       </div>
       
       <div className="flex flex-wrap gap-4">
+        {/* Buscador de productos */}
+        <div className="flex items-center flex-1 min-w-64">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              placeholder="Buscar productos por nombre o código..."
+              className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:border-rose-500 focus:ring-rose-500 focus:ring-1 text-sm"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+        
         {/* Filtro por categoría */}
         <div className="flex items-center">
           <label htmlFor="category-filter" className="mr-2 text-sm text-gray-600">Categoría:</label>
