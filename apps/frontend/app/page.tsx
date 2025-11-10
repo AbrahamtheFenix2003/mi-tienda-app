@@ -36,7 +36,7 @@ export default function HomePage() {
 
   // Filter products by category and search query
   const filteredProducts = useMemo(() => {
-    let filtered = products.filter(p => p.isActive);
+    let filtered = products.filter(p => p.isActive && p.stock > 0);
 
     // Filter by category
     if (selectedCategoryId !== null) {
@@ -63,7 +63,7 @@ export default function HomePage() {
     if (selectedCategoryId !== null || searchQuery.trim().length > 0) {
       return [];
     }
-    return products.filter(p => p.isActive && p.isFeatured).slice(0, 4);
+    return products.filter(p => p.isActive && p.stock > 0 && p.isFeatured).slice(0, 4);
   }, [products, selectedCategoryId, searchQuery]);
 
   // Handle product selection
