@@ -79,20 +79,20 @@ export const PurchaseDetailsModal: React.FC<PurchaseDetailsModalProps> = ({
         <div className="space-y-6">
           {/* Sección 1: Datos Generales */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <strong>Proveedor:</strong> {purchase.supplier?.name || 'N/A'}
+            <div className="text-black">
+              <strong className="text-black">Proveedor:</strong> {purchase.supplier?.name || 'N/A'}
             </div>
-            <div>
-              <strong>Fecha:</strong> {formatDate(purchase.purchaseDate)}
+            <div className="text-black">
+              <strong className="text-black">Fecha:</strong> {formatDate(purchase.purchaseDate)}
             </div>
-            <div>
-              <strong>Factura:</strong> {purchase.invoiceNumber || 'N/A'}
+            <div className="text-black">
+              <strong className="text-black">Factura:</strong> {purchase.invoiceNumber || 'N/A'}
             </div>
-            <div>
-              <strong>Pago:</strong> {purchase.paymentMethod || 'N/A'}
+            <div className="text-black">
+              <strong className="text-black">Pago:</strong> {purchase.paymentMethod || 'N/A'}
             </div>
-            <div>
-              <strong>Estado:</strong> 
+            <div className="text-black">
+              <strong className="text-black">Estado:</strong>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 ${getStatusBadge(purchase.status)}`}>
                 {getStatusText(purchase.status)}
               </span>
@@ -101,21 +101,21 @@ export const PurchaseDetailsModal: React.FC<PurchaseDetailsModalProps> = ({
 
           {/* Sección 2: Listado de Items */}
           <div>
-            <h4 className="text-lg font-medium text-gray-900 mb-3">Productos</h4>
+            <h4 className="text-lg font-medium text-black mb-3">Productos</h4>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                       Producto
                     </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                       Cantidad
                     </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                       Costo Unitario
                     </th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                       Subtotal
                     </th>
                   </tr>
@@ -124,22 +124,22 @@ export const PurchaseDetailsModal: React.FC<PurchaseDetailsModalProps> = ({
                   {purchase.items.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-black font-medium">
                           {item.product?.name || 'Producto no encontrado'}
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-black">
                           {item.quantity}
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-black">
                           {formatPrice(item.purchasePrice)}
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-black">
                           {formatPrice((parseFloat(item.purchasePrice) * item.quantity).toString())}
                         </div>
                       </td>
@@ -151,7 +151,7 @@ export const PurchaseDetailsModal: React.FC<PurchaseDetailsModalProps> = ({
           </div>
 
           {/* Sección 3: Total */}
-          <div className="text-right text-xl font-bold mt-4 pt-4 border-t border-gray-200">
+          <div className="text-right text-xl font-bold text-black mt-4 pt-4 border-t border-gray-200">
             Total: {formatPrice(purchase.totalAmount)}
           </div>
 

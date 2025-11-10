@@ -17,7 +17,7 @@ const formatPrice = (price: string | null | undefined): string => {
         style: 'currency',
         currency: 'PEN',
         minimumFractionDigits: 2,
-        maximumFractionDigits: 0,
+        maximumFractionDigits: 2,
       }).format(num);
 };
 

@@ -207,6 +207,7 @@ const EditarCompraPage: React.FC = () => {
         isLoading={updatePurchaseMutation.isPending}
         suppliers={suppliers}
         products={products}
+        isEditMode={true}
       />
     </div>
   );

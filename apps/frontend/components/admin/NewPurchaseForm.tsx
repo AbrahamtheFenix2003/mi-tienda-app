@@ -52,6 +52,14 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [purchasePrice, setPurchasePrice] = useState('');
 
+  // Prevenir envío del formulario con Enter en inputs específicos
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   // Agregar producto a la cesta
   const addToCart = () => {
     if (!selectedProduct) return;
@@ -128,6 +136,31 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
           ...item,
           quantity: newQuantity,
           subtotal: newQuantity * item.purchasePrice,
+        };
+      }
+      return item;
+    });
+    setCartItems(updatedItems);
+    
+    // Sincronizar con el formulario
+    const formItems = updatedItems.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      purchasePrice: item.purchasePrice,
+      loteId: null,
+      fechaVencimiento: null,
+    }));
+    setValue('items', formItems, { shouldValidate: true });
+  };
+
+  // Actualizar precio en la cesta
+  const updateCartPrice = (index: number, newPrice: number) => {
+    const updatedItems = cartItems.map((item, i) => {
+      if (i === index) {
+        return {
+          ...item,
+          purchasePrice: newPrice,
+          subtotal: item.quantity * newPrice,
         };
       }
       return item;
@@ -308,6 +341,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
                       min="1"
                       value={quantity}
                       onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                      onKeyDown={handleKeyDown}
                       className={getFieldClasses()}
                     />
                   </div>
@@ -323,6 +357,7 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
                       step="0.01"
                       value={purchasePrice}
                       onChange={(e) => setPurchasePrice(e.target.value)}
+                      onKeyDown={handleKeyDown}
                       placeholder="0.00"
                       className={getFieldClasses()}
                     />
@@ -362,6 +397,8 @@ export const NewPurchaseForm: React.FC<NewPurchaseFormProps> = ({
             items={cartItems}
             onRemoveItem={removeFromCart}
             onUpdateQuantity={updateCartQuantity}
+            onUpdatePrice={updateCartPrice}
+            allowPriceEdit={true}
           />
         )}
 

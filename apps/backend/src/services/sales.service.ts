@@ -431,29 +431,64 @@ export const salesService = {
         });
       }
 
-      // Paso C: Revertir Movimiento de Caja
-      // Buscar el balance actual
-      const balance = await tx.cashMovement.findFirst({
-        orderBy: { date: 'desc' }
+      // Paso C: Eliminar movimiento de caja original (en lugar de crear reversión)
+      // Esto elimina completamente el movimiento y recalcula saldos como si nunca hubiera existido
+      const existingCashMovement = await tx.cashMovement.findFirst({
+        where: { referenceId: saleId }
       });
 
-      const prevBalance = balance?.newBalance || new Prisma.Decimal(0);
-      const newBalance = prevBalance.sub(sale.totalAmount); // Restar el monto de la venta
+      if (existingCashMovement) {
+        // Eliminar el movimiento de caja y recalcular saldos posteriores
+        await tx.cashMovement.delete({
+          where: { id: existingCashMovement.id }
+        });
 
-      await tx.cashMovement.create({
-        data: {
-          type: CashMovementType.SALIDA,
-          amount: sale.totalAmount, // Monto positivo - el tipo SALIDA ya indica que se resta
-          category: 'ANULACION_VENTA',
-          description: `Anulación Venta ${saleId}`,
-          paymentMethod: sale.paymentMethod,
-          referenceId: sale.id,
-          userId: userId,
-          previousBalance: prevBalance,
-          newBalance: newBalance,
-          date: new Date()
+        // Recalcular saldos de todos los movimientos posteriores
+        const subsequentMovements = await tx.cashMovement.findMany({
+          where: {
+            date: {
+              gte: existingCashMovement.date
+            }
+          },
+          orderBy: {
+            date: 'asc'
+          }
+        });
+
+        // Obtener el último saldo válido antes del movimiento eliminado
+        const previousMovement = await tx.cashMovement.findFirst({
+          where: {
+            date: {
+              lt: existingCashMovement.date
+            }
+          },
+          orderBy: {
+            date: 'desc'
+          }
+        });
+
+        let runningBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
+
+        // Recalcular saldos para todos los movimientos posteriores
+        for (const movement of subsequentMovements) {
+          const prevBalance = runningBalance;
+          
+          // Calcular nuevo saldo basado en el tipo de movimiento
+          if (movement.type === CashMovementType.ENTRADA) {
+            runningBalance = prevBalance.plus(movement.amount);
+          } else {
+            runningBalance = prevBalance.sub(movement.amount);
+          }
+
+          await tx.cashMovement.update({
+            where: { id: movement.id },
+            data: {
+              previousBalance: prevBalance,
+              newBalance: runningBalance
+            }
+          });
         }
-      });
+      }
 
       // Paso D: Anular la Venta
       const annulledSale = await tx.sale.update({
