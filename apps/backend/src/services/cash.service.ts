@@ -104,10 +104,10 @@ export class CashService {
             not: newMovement.id,
           },
         },
-        orderBy: {
-          date: 'asc',
-          createdAt: 'asc',
-        },
+        orderBy: [
+          { date: 'asc' },
+          { createdAt: 'asc' }
+        ],
       });
 
       let runningBalance = newBalance;
@@ -209,10 +209,10 @@ export class CashService {
               not: updatedMovement.id,
             },
           },
-          orderBy: {
-            date: 'asc',
-            createdAt: 'asc',
-          },
+          orderBy: [
+            { date: 'asc' },
+            { createdAt: 'asc' }
+          ],
         });
 
         let runningBalance = newBalance;
@@ -274,10 +274,10 @@ export class CashService {
             not: movement.id,
           },
         },
-        orderBy: {
-          date: 'asc',
-          createdAt: 'asc',
-        },
+        orderBy: [
+          { date: 'asc' },
+          { createdAt: 'asc' }
+        ],
       });
 
       // Obtener el último saldo válido antes del movimiento eliminado
@@ -341,10 +341,10 @@ export class CashService {
             not: movementToDelete.id
           }
         },
-        orderBy: {
-          date: 'asc',
-          createdAt: 'asc'
-        }
+        orderBy: [
+          { date: 'asc' },
+          { createdAt: 'asc' }
+        ]
       });
 
       // Obtener el último saldo válido antes del movimiento eliminado
