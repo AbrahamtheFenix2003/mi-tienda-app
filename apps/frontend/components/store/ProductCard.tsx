@@ -58,49 +58,49 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   return (
     <div
       onClick={() => onClick(product)}
-      className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden border border-gray-200 hover:border-rose-300"
+      className="group cursor-pointer overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:border-rose-300 hover:shadow-md"
     >
       {/* Image Container */}
-      <div className="relative aspect-square bg-gray-100 overflow-hidden">
+      <div className="relative aspect-square overflow-hidden bg-gray-100">
         {imageUrl && isLocalUrl(imageUrl) ? (
           <Image
             src={imageUrl}
             alt={product.name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-200"
+            className="object-cover transition-transform duration-200 group-hover:scale-105"
           />
         ) : imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex h-full items-center justify-center">
             <Package className="h-16 w-16 text-gray-300" />
           </div>
         )}
 
         {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
+        <div className="absolute left-2 top-2 flex flex-col gap-1">
           {product.isFeatured && (
-            <span className="bg-rose-500 text-white text-xs font-semibold px-2 py-1 rounded shadow-sm">
+            <span className="rounded bg-rose-500 px-2 py-1 text-xs font-semibold text-white shadow-sm">
               Destacado
             </span>
           )}
           {hasDiscount && (
-            <span className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded shadow-sm">
+            <span className="rounded bg-green-500 px-2 py-1 text-xs font-semibold text-white shadow-sm">
               Oferta
             </span>
           )}
         </div>
 
         {/* Stock Badge */}
-        <div className="absolute top-2 right-2">
+        <div className="absolute right-2 top-2">
           {!hasStock && (
-            <span className="bg-gray-800 text-white text-xs font-semibold px-2 py-1 rounded shadow-sm">
+            <span className="rounded bg-gray-800 px-2 py-1 text-xs font-semibold text-white shadow-sm">
               Agotado
             </span>
           )}
@@ -111,14 +111,14 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       <div className="p-4">
         {/* Category */}
         {product.category && (
-          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+          <div className="mb-1 flex items-center gap-1 text-xs text-gray-500">
             <Tag className="h-3 w-3" />
             <span>{product.category.name}</span>
           </div>
         )}
 
         {/* Product Name */}
-    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-10 group-hover:text-rose-600 transition-colors">
+        <h3 className="mb-2 min-h-10 font-semibold text-gray-900 transition-colors line-clamp-2 group-hover:text-rose-600">
           {product.name}
         </h3>
 
