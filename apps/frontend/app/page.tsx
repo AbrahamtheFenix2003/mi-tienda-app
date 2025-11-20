@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Loader2, AlertTriangle, Sparkles, Package, Menu, X } from 'lucide-react';
+import { Loader2, AlertTriangle, Sparkles, Package, Menu, X, Home, Search, ShoppingCart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCategories } from '@/services/categoryService';
 import { fetchProducts } from '@/services/productService';
@@ -13,6 +13,7 @@ import ContactInfo from '@/components/store/ContactInfo';
 import ProductCard from '@/components/store/ProductCard';
 import ProductDetailModal from '@/components/store/ProductDetailModal';
 import CartDrawer from '@/components/store/CartDrawer';
+import { useCart } from '@/hooks/useCart';
 
 export default function HomePage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
@@ -21,6 +22,7 @@ export default function HomePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { totalItems } = useCart();
 
   // Fetch categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
@@ -72,6 +74,12 @@ export default function HomePage() {
     setIsModalOpen(true);
   };
 
+  const handleScrollToTop = () => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleCategorySelect = (categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
     setIsSidebarOpen(false);
@@ -95,7 +103,7 @@ export default function HomePage() {
       />
 
       {/* Main Content */}
-      <div className="w-full max-w-[2000px] ml-0 mr-auto pl-4 pr-4 sm:pl-6 sm:pr-10 lg:pl-4 lg:pr-12 xl:pr-16 2xl:pr-24 py-8">
+      <div className="w-full max-w-[2000px] ml-0 mr-auto pl-4 pr-4 sm:pl-6 sm:pr-10 lg:pl-4 lg:pr-12 xl:pr-16 2xl:pr-24 py-8 pb-28 lg:pb-8">
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
@@ -125,24 +133,26 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-rose-400 hover:text-rose-600"
               >
                 <Menu className="h-4 w-4" />
-                Categorías
+                Categorias
               </button>
               <span className="text-xs text-gray-500">
                 {categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
             {/* Sidebar */}
             <aside className="hidden lg:block">
-              <div className="lg:sticky lg:top-24 space-y-6">
-                <CategorySidebar
-                  categories={categories}
-                  products={products}
-                  selectedCategoryId={selectedCategoryId}
-                  onCategorySelect={handleCategorySelect}
-                />
-                <ContactInfo />
+              <div className="lg:sticky lg:top-24">
+                <div className="space-y-6 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+                  <CategorySidebar
+                    categories={categories}
+                    products={products}
+                    selectedCategoryId={selectedCategoryId}
+                    onCategorySelect={handleCategorySelect}
+                  />
+                  <ContactInfo />
+                </div>
               </div>
             </aside>
 
@@ -222,11 +232,11 @@ export default function HomePage() {
             className="fixed inset-0 bg-black/40 transition-opacity"
             onClick={() => setIsSidebarOpen(false)}
           />
-          <div className="relative mr-auto flex h-full w-80 max-w-full flex-col bg-white shadow-2xl">
+          <div className="relative mr-auto flex h-full w-64 max-w-full flex-col bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">Filtros</p>
-                <h3 className="text-base font-semibold text-gray-900">Categorías</h3>
+                <h3 className="text-base font-semibold text-gray-900">Categorias</h3>
               </div>
               <button
                 type="button"
@@ -249,6 +259,44 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white shadow-[0px_-4px_25px_rgba(15,23,42,0.1)]">
+          <div className="max-w-[2000px] mx-auto flex items-center justify-between px-6 py-3 text-xs font-semibold text-gray-600">
+            <button
+              type="button"
+              onClick={handleScrollToTop}
+              className="flex flex-col items-center gap-1 text-gray-600 transition hover:text-rose-600"
+            >
+              <Home className="h-5 w-5" />
+              Inicio
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="flex flex-col items-center gap-1 text-gray-600 transition hover:text-rose-600"
+            >
+              <Search className="h-5 w-5" />
+              Categorias
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsCartOpen(true)}
+              className="relative flex flex-col items-center gap-1 text-gray-600 transition hover:text-rose-600"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 right-0 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                  {totalItems > 9 ? '9+' : totalItems}
+                </span>
+              )}
+              Carrito
+            </button>
+          </div>
+        </div>
+        <div className="h-20" aria-hidden="true" />
+      </div>
 
       {/* Product Detail Modal */}
       <ProductDetailModal
