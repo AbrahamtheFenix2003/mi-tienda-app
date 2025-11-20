@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Loader2, AlertTriangle, Sparkles, Package, Menu, X, Home, Search, ShoppingCart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchCategories } from '@/services/categoryService';
 import { fetchProducts } from '@/services/productService';
 import { Product } from '@mi-tienda/types';
@@ -16,10 +17,11 @@ import CartDrawer from '@/components/store/CartDrawer';
 import { useCart } from '@/hooks/useCart';
 
 export default function HomePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // selectedProduct and isModalOpen are derived from the URL (?product=ID)
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { totalItems } = useCart();
@@ -35,6 +37,15 @@ export default function HomePage() {
     queryKey: ['products'],
     queryFn: fetchProducts,
   });
+
+  // Derivar producto seleccionado e estado del modal desde la URL (evita setState en effect)
+  const productIdParam = searchParams.get('product');
+  const productId = productIdParam ? parseInt(productIdParam, 10) : null;
+  const selectedProduct = useMemo(() => {
+    if (productId === null || Number.isNaN(productId)) return null;
+    return products.find(p => p.id === productId) ?? null;
+  }, [products, productId]);
+  const isModalOpen = selectedProduct !== null;
 
   // Filter products by category and search query
   const filteredProducts = useMemo(() => {
@@ -70,8 +81,10 @@ export default function HomePage() {
 
   // Handle product selection
   const handleProductSelect = (product: Product) => {
-    setSelectedProduct(product);
-    setIsModalOpen(true);
+    // Solo actualizamos la URL; el modal se abrirá porque selectedProduct se deriva desde la URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('product', product.id.toString());
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   const handleScrollToTop = () => {
@@ -86,8 +99,10 @@ export default function HomePage() {
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedProduct(null);
+    // Eliminamos el param de la URL; la derivación cerrará el modal
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('product');
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   const isLoading = categoriesLoading || productsLoading;
@@ -287,7 +302,7 @@ export default function HomePage() {
             >
               <ShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 right-0 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                <span className="absolute -top-1 right-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
                   {totalItems > 9 ? '9+' : totalItems}
                 </span>
               )}

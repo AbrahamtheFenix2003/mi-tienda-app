@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Product } from '@mi-tienda/types';
 import { Modal } from '@/components/ui/Modal';
-import { Package, Tag, ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { Package, Tag, ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import { getAbsoluteImageUrl, isLocalUrl } from '@/lib/imageUtils';
 import { useCart } from '@/hooks/useCart';
@@ -78,6 +78,48 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
     addItem(product, displayQuantity);
     addToast(`Se añadió ${displayQuantity} ${displayQuantity === 1 ? 'unidad' : 'unidades'} de ${product.name} al carrito`, 'success');
     handleClose();
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+    try {
+      const url = typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}?product=${product.id}`
+        : `?product=${product.id}`;
+
+      // Si el Share API está disponible, abrir diálogo nativo
+      if (navigator.share) {
+        await navigator.share({
+          title: product.name,
+          text: product.description ?? product.name,
+          url,
+        });
+        addToast('Compartido correctamente', 'success');
+        return;
+      }
+
+      // Si no, copiamos al portapapeles
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        addToast('Enlace copiado al portapapeles', 'success');
+        return;
+      }
+
+      // Fallback: seleccionar y copiar
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'absolute';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      addToast('Enlace copiado al portapapeles', 'success');
+    } catch (err) {
+      console.error('Share failed', err);
+      addToast('No se pudo compartir el producto', 'error');
+    }
   };
 
   return (
@@ -303,6 +345,14 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      <span>Compartir</span>
+                    </button>
 
                     <button
                       type="button"
