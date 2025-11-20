@@ -132,7 +132,7 @@ export default function HomePage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:[grid-template-columns:320px_minmax(0,1fr)]">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             {/* Sidebar */}
             <aside className="hidden lg:block">
               <div className="lg:sticky lg:top-24 space-y-6">

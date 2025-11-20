@@ -2,10 +2,11 @@
 
 import type { MouseEvent } from 'react';
 import { Product } from '@mi-tienda/types';
-import { Package, ShoppingCart, Tag } from 'lucide-react';
+import { Package, ShoppingCart, Tag, Plus, Minus, X } from 'lucide-react';
 import Image from 'next/image';
 import { getAbsoluteImageUrl, isLocalUrl } from '@/lib/imageUtils';
 import { useCart } from '@/hooks/useCart';
+import { useToast } from '@/hooks/useToast';
 
 interface ProductCardProps {
   product: Product;
@@ -16,15 +17,42 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const imageUrl = product.imageUrl ? getAbsoluteImageUrl(product.imageUrl) : null;
   const hasStock = product.stock > 0;
   const hasDiscount = product.originalPrice && parseFloat(product.originalPrice) > parseFloat(product.price);
-  const { addItem, getItemQuantity } = useCart();
+  const { addItem, getItemQuantity, updateQuantity, removeItem } = useCart();
+  const { addToast } = useToast();
   const existingQuantity = getItemQuantity(product.id);
   const remainingStock = Math.max(product.stock - existingQuantity, 0);
   const canAddToCart = hasStock && remainingStock > 0;
+  const isInCart = existingQuantity > 0;
 
   const handleAddToCart = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (!canAddToCart) return;
     addItem(product, 1);
+    addToast(`Se añadió 1 unidad de ${product.name} al carrito`, 'success');
+  };
+
+  const handleIncreaseQuantity = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!canAddToCart) return;
+    updateQuantity(product.id, existingQuantity + 1);
+    addToast(`Se actualizó la cantidad de ${product.name} a ${existingQuantity + 1}`, 'success');
+  };
+
+  const handleDecreaseQuantity = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (existingQuantity <= 1) {
+      removeItem(product.id);
+      addToast(`Se eliminó ${product.name} del carrito`, 'success');
+    } else {
+      updateQuantity(product.id, existingQuantity - 1);
+      addToast(`Se actualizó la cantidad de ${product.name} a ${existingQuantity - 1}`, 'success');
+    }
+  };
+
+  const handleRemoveFromCart = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    removeItem(product.id);
+    addToast(`Se eliminó ${product.name} del carrito`, 'success');
   };
 
   return (
@@ -122,15 +150,55 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         )}
 
         <div className="mt-4">
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={!canAddToCart}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-rose-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            <span>{canAddToCart ? 'Añadir a la cesta' : 'Sin disponibilidad'}</span>
-          </button>
+          {isInCart ? (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center rounded-full border border-gray-300">
+                <button
+                  type="button"
+                  onClick={handleDecreaseQuantity}
+                  className="flex h-8 w-8 items-center justify-center rounded-l-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:text-gray-300"
+                  disabled={existingQuantity <= 0}
+                  aria-label="Disminuir cantidad"
+                >
+                  {existingQuantity <= 1 ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    <Minus className="h-4 w-4" />
+                  )}
+                </button>
+                <span className="min-w-8 text-center text-sm font-semibold text-gray-900">
+                  {existingQuantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleIncreaseQuantity}
+                  className="flex h-8 w-8 items-center justify-center rounded-r-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:text-gray-300"
+                  disabled={!canAddToCart}
+                  aria-label="Incrementar cantidad"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveFromCart}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white transition-colors hover:bg-red-600"
+                aria-label="Eliminar del carrito"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={!canAddToCart}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-rose-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span>{canAddToCart ? 'Añadir a la cesta' : 'Sin disponibilidad'}</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

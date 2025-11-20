@@ -7,6 +7,7 @@ import { Package, Tag, ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart } fr
 import Image from 'next/image';
 import { getAbsoluteImageUrl, isLocalUrl } from '@/lib/imageUtils';
 import { useCart } from '@/hooks/useCart';
+import { useToast } from '@/hooks/useToast';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -18,6 +19,7 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const { addItem, getItemQuantity } = useCart();
+  const { addToast } = useToast();
 
   const productId = product?.id ?? null;
   const stockValue = product?.stock ?? 0;
@@ -74,6 +76,8 @@ export default function ProductDetailModal({ product, isOpen, onClose }: Product
   const handleAddToCart = () => {
     if (!product || !canAddToCart || displayQuantity <= 0) return;
     addItem(product, displayQuantity);
+    addToast(`Se añadió ${displayQuantity} ${displayQuantity === 1 ? 'unidad' : 'unidades'} de ${product.name} al carrito`, 'success');
+    handleClose();
   };
 
   return (

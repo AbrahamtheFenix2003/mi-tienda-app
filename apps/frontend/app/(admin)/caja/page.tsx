@@ -110,7 +110,7 @@ export default function CajaPage() {
   return (
     <div className="space-y-6">
       {/* Tarjeta de Saldo Actual */}
-      <Card className="mb-4 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+      <Card className="mb-4 bg-linear-to-r from-blue-50 to-blue-100 border-blue-200">
         <CardHeader>
           <CardTitle className="text-blue-900">Saldo Actual en Caja</CardTitle>
         </CardHeader>
@@ -124,7 +124,7 @@ export default function CajaPage() {
       {/* Tarjetas de Totales de Ingresos y Egresos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Tarjeta de Ingresos */}
-        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+        <Card className="bg-linear-to-r from-green-50 to-green-100 border-green-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-green-900">Total de Ingresos</CardTitle>
@@ -139,7 +139,7 @@ export default function CajaPage() {
         </Card>
 
         {/* Tarjeta de Egresos */}
-        <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+        <Card className="bg-linear-to-r from-red-50 to-red-100 border-red-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-red-900">Total de Egresos</CardTitle>
