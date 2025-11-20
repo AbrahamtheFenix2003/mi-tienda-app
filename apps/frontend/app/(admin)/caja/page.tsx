@@ -7,12 +7,15 @@ import type { CashMovementWithRelations } from "@mi-tienda/types";
 import { getCashMovements, deleteManualMovement } from "@/services/cashService";
 import CashMovementsTable from "@/components/admin/CashMovementsTable";
 import { ManualMovementModal } from "@/components/admin/ManualMovementModal";
+import { CashMovementDetailsModal } from "@/components/admin/CashMovementDetailsModal";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 
 export default function CajaPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [movementToEdit, setMovementToEdit] = useState<CashMovementWithRelations | null>(null);
+  const [movementToView, setMovementToView] = useState<CashMovementWithRelations | null>(null);
   const [filterType, setFilterType] = useState<'TODOS' | 'ENTRADA' | 'SALIDA'>('TODOS');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -97,6 +100,11 @@ export default function CajaPage() {
   const handleNewMovement = () => {
     setMovementToEdit(null);
     setIsModalOpen(true);
+  };
+
+  const handleView = (movement: CashMovementWithRelations) => {
+    setMovementToView(movement);
+    setIsDetailsModalOpen(true);
   };
 
   return (
@@ -240,13 +248,34 @@ export default function CajaPage() {
         </div>
       )}
 
-      {data && <CashMovementsTable data={filteredData} onEdit={handleEdit} onDelete={handleDelete} />}
+      {data && (
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle>Listado de Movimientos</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 sm:p-0">
+            <CashMovementsTable
+              data={filteredData}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onView={handleView}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Modal para crear/editar movimientos manuales */}
       <ManualMovementModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         movementToEdit={movementToEdit}
+      />
+
+      {/* Modal para ver detalles */}
+      <CashMovementDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        movement={movementToView}
       />
     </div>
   );
