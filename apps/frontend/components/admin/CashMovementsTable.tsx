@@ -2,15 +2,16 @@
 
 import React from "react";
 import type { CashMovementWithRelations } from "@mi-tienda/types";
-import { ArrowUpCircle, ArrowDownCircle, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpCircle, ArrowDownCircle, Pencil, Trash2, Eye } from "lucide-react";
 
 interface CashMovementsTableProps {
   data: CashMovementWithRelations[];
   onEdit?: (movement: CashMovementWithRelations) => void;
   onDelete?: (movementId: string) => void;
+  onView?: (movement: CashMovementWithRelations) => void;
 }
 
-export default function CashMovementsTable({ data, onEdit, onDelete }: CashMovementsTableProps) {
+export default function CashMovementsTable({ data, onEdit, onDelete, onView }: CashMovementsTableProps) {
   // Función para formatear fechas (manejo correcto de zona horaria UTC)
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('es-PE', {
@@ -71,28 +72,41 @@ export default function CashMovementsTable({ data, onEdit, onDelete }: CashMovem
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.paymentMethod ?? "-"}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.user?.name ?? mov.user?.email ?? "-"}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">
-                  {mov.referenceId === null ? (
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        onClick={() => onEdit?.(mov)}
-                        title="Editar"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        onClick={() => onDelete?.(mov.id)}
-                        title="Eliminar"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-gray-500">Auto</span>
-                  )}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      onClick={() => onView?.(mov)}
+                      title="Ver detalles"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    
+                    {mov.referenceId === null ? (
+                      <>
+                        <button
+                          type="button"
+                          className="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          onClick={() => onEdit?.(mov)}
+                          title="Editar"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          onClick={() => onDelete?.(mov.id)}
+                          title="Eliminar"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 text-xs text-gray-500 border border-transparent">
+                        Auto
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             );

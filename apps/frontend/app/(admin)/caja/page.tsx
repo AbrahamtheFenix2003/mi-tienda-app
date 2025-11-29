@@ -7,12 +7,15 @@ import type { CashMovementWithRelations } from "@mi-tienda/types";
 import { getCashMovements, deleteManualMovement } from "@/services/cashService";
 import CashMovementsTable from "@/components/admin/CashMovementsTable";
 import { ManualMovementModal } from "@/components/admin/ManualMovementModal";
+import { CashMovementDetailsModal } from "@/components/admin/CashMovementDetailsModal";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 
 export default function CajaPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [movementToEdit, setMovementToEdit] = useState<CashMovementWithRelations | null>(null);
+  const [movementToView, setMovementToView] = useState<CashMovementWithRelations | null>(null);
   const [filterType, setFilterType] = useState<'TODOS' | 'ENTRADA' | 'SALIDA'>('TODOS');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -99,10 +102,15 @@ export default function CajaPage() {
     setIsModalOpen(true);
   };
 
+  const handleView = (movement: CashMovementWithRelations) => {
+    setMovementToView(movement);
+    setIsDetailsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Tarjeta de Saldo Actual */}
-      <Card className="mb-4 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+      <Card className="mb-4 bg-linear-to-r from-blue-50 to-blue-100 border-blue-200">
         <CardHeader>
           <CardTitle className="text-blue-900">Saldo Actual en Caja</CardTitle>
         </CardHeader>
@@ -116,7 +124,7 @@ export default function CajaPage() {
       {/* Tarjetas de Totales de Ingresos y Egresos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Tarjeta de Ingresos */}
-        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+        <Card className="bg-linear-to-r from-green-50 to-green-100 border-green-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-green-900">Total de Ingresos</CardTitle>
@@ -131,7 +139,7 @@ export default function CajaPage() {
         </Card>
 
         {/* Tarjeta de Egresos */}
-        <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+        <Card className="bg-linear-to-r from-red-50 to-red-100 border-red-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-red-900">Total de Egresos</CardTitle>
@@ -240,13 +248,34 @@ export default function CajaPage() {
         </div>
       )}
 
-      {data && <CashMovementsTable data={filteredData} onEdit={handleEdit} onDelete={handleDelete} />}
+      {data && (
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle>Listado de Movimientos</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 sm:p-0">
+            <CashMovementsTable
+              data={filteredData}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onView={handleView}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Modal para crear/editar movimientos manuales */}
       <ManualMovementModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         movementToEdit={movementToEdit}
+      />
+
+      {/* Modal para ver detalles */}
+      <CashMovementDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        movement={movementToView}
       />
     </div>
   );
