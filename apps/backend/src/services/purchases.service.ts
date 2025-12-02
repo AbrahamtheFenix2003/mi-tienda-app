@@ -105,9 +105,10 @@ const mapPurchase = (purchase: PrismaPurchaseWithRelations): Purchase => ({
 export const getAllPurchases = async (): Promise<Purchase[]> => {
   const purchases = await prisma.purchase.findMany({
     include: purchaseInclude,
-    orderBy: {
-      purchaseDate: 'desc',
-    },
+    orderBy: [
+      { purchaseDate: 'desc' },
+      { createdAt: 'desc' }
+    ],
   });
 
   return purchases.map(mapPurchase);
@@ -263,7 +264,7 @@ export const createPurchase = async (data: PurchaseFormData, userId: string): Pr
         description: `Compra a Proveedor #${newPurchase.supplierId}`,
         paymentMethod: newPurchase.paymentMethod as any,
         referenceId: newPurchase.id, // ¡Clave! Vincula a la compra
-        date: newPurchase.purchaseDate,
+        date: new Date(), // Usar fecha y hora actual para orden cronológico correcto
         previousBalance: previousBalance,
         newBalance: newBalance,
         userId: newPurchase.registeredById // El mismo usuario que registró la compra
