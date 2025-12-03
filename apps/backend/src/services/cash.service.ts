@@ -53,7 +53,67 @@ export class CashService {
 
   async createManualMovement(data: CreateManualMovementInput, userId: string): Promise<CashMovementWithRelations> {
     return await prisma.$transaction(async (tx) => {
-      const movementDate = new Date(data.date);
+      // Lógica corregida para detección de fechas y desempate temporal
+      const now = new Date();
+
+      // 1. Obtener la fecha actual en Perú como string "YYYY-MM-DD"
+      const peruFormatter = new Intl.DateTimeFormat('en-CA', { // en-CA usa formato ISO YYYY-MM-DD
+        timeZone: 'America/Lima',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const todayPeru = peruFormatter.format(now);
+
+      // 2. Obtener la fecha del input como string "YYYY-MM-DD"
+      // Evitamos crear un objeto Date primero para no sufrir el desfase de zona horaria (UTC-5)
+      const inputDateString = typeof data.date === 'string' 
+        ? data.date.split('T')[0] 
+        : new Date(data.date).toISOString().split('T')[0];
+
+      const isToday = inputDateString === todayPeru;
+
+      // Parseamos la fecha de entrada una sola vez
+      const parsedInputDate = new Date(data.date);
+
+      // Detectamos si el input original era solo una fecha (ej. "YYYY-MM-DD")
+      // Esto es un buen proxy para saber si el usuario especificó una hora o no.
+      const isDateOnlyInput = typeof data.date === 'string' && data.date.length === 10;
+      
+      let movementDate: Date;
+      if (isToday) {
+        if (isDateOnlyInput) {
+          // Si es hoy y el input fue solo fecha, usamos la hora actual (comportamiento actual deseado para "registrar ahora")
+          movementDate = now;
+        } else {
+          // Si es hoy y el input incluía una hora específica, respetamos esa hora
+          movementDate = parsedInputDate;
+        }
+      } else {
+        // Si no es hoy, siempre respetamos la fecha y hora del input
+        movementDate = parsedInputDate;
+      }
+
+      // 4. Lógica de Desempate Temporal (Solo si es hoy)
+      // Si hay una compra u otro movimiento registrado en este preciso instante,
+      // empujamos este movimiento 1 segundo adelante para asegurar que sea el último.
+      if (isToday) {
+        const lastRegisteredMovement = await tx.cashMovement.findFirst({
+          where: {
+            date: {
+              // CRÍTICO: Solo buscamos conflictos con movimientos que hayan ocurrido hasta AHORA.
+              // Si existe un movimiento futuro (ej. año 2030 por error), lo ignoramos para no
+              // "teletransportar" este movimiento al futuro.
+              lte: new Date(now.getTime() + 60000) // +1 minuto de margen de seguridad
+            }
+          },
+          orderBy: { date: 'desc' }
+        });
+
+        if (lastRegisteredMovement && lastRegisteredMovement.date >= movementDate) {
+          movementDate = new Date(lastRegisteredMovement.date.getTime() + 1000);
+        }
+      }
       
       // Obtener el movimiento inmediatamente anterior en fecha
       const previousMovement = await tx.cashMovement.findFirst({
