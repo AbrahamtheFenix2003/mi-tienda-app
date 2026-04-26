@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma.js';
 import { Prisma, StockMovementType, StockMovementSubType, LotStatus, PurchaseStatus, CashMovementType } from '@prisma/client';
 import type { Purchase, PurchaseItem, Supplier, Product, PurchaseFormData } from '@mi-tienda/types';
+import { applyCashMovementToBalance } from '../utils/cash-movement.js';
 
 // Tipo para los datos de entrada al crear una compra (sin incluir campos calculados)
 export type PurchaseData = {
@@ -598,12 +599,7 @@ export const updatePurchase = async (purchaseId: string, data: PurchaseFormData,
         let runningBalance = newBalance;
         for (const movement of subsequentMovements) {
           const prevBalance = runningBalance;
-          // Aplicar correctamente según el tipo de movimiento
-          if (movement.type === CashMovementType.ENTRADA) {
-            runningBalance = prevBalance.add(movement.amount);
-          } else {
-            runningBalance = prevBalance.sub(movement.amount);
-          }
+          runningBalance = applyCashMovementToBalance(prevBalance, movement);
 
           await tx.cashMovement.update({
             where: { id: movement.id },
@@ -746,13 +742,7 @@ export const annulPurchase = async (purchaseId: string, userId: string): Promise
       // Recalcular saldos para todos los movimientos posteriores
       for (const movement of subsequentMovements) {
         const prevBalance = runningBalance;
-        
-        // Calcular nuevo saldo basado en el tipo de movimiento
-        if (movement.type === CashMovementType.ENTRADA) {
-          runningBalance = prevBalance.plus(movement.amount);
-        } else {
-          runningBalance = prevBalance.sub(movement.amount);
-        }
+        runningBalance = applyCashMovementToBalance(prevBalance, movement);
 
         await tx.cashMovement.update({
           where: { id: movement.id },

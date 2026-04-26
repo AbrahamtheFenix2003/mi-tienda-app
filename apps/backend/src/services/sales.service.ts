@@ -3,6 +3,7 @@
 import prisma from '../utils/prisma.js';
 import { Sale, SaleItem, SaleFormData } from '@mi-tienda/types';
 import { Prisma, StockMovementType, StockMovementSubType, CashMovementType, OrderStatus, LotStatus } from '@prisma/client';
+import { applyCashMovementToBalance } from '../utils/cash-movement.js';
 
 // Tipo para los resultados de Prisma con relaciones incluidas
 type PrismaSaleWithRelations = Prisma.SaleGetPayload<{
@@ -472,13 +473,7 @@ export const salesService = {
         // Recalcular saldos para todos los movimientos posteriores
         for (const movement of subsequentMovements) {
           const prevBalance = runningBalance;
-          
-          // Calcular nuevo saldo basado en el tipo de movimiento
-          if (movement.type === CashMovementType.ENTRADA) {
-            runningBalance = prevBalance.plus(movement.amount);
-          } else {
-            runningBalance = prevBalance.sub(movement.amount);
-          }
+          runningBalance = applyCashMovementToBalance(prevBalance, movement);
 
           await tx.cashMovement.update({
             where: { id: movement.id },
