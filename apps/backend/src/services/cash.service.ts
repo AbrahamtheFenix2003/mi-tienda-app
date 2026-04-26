@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma.js';
 import { CashMovementWithRelations, CreateManualMovementInput, UpdateManualMovementInput } from '@mi-tienda/types';
 import { Prisma, CashMovementType, PaymentMethod } from '@prisma/client';
+import { applyCashMovementToBalance } from '../utils/cash-movement.js';
 
 // Definir tipo para los resultados de Prisma con relaciones incluidas
 type PrismaCashMovementWithRelations = Prisma.CashMovementGetPayload<{
@@ -173,7 +174,7 @@ export class CashService {
       let runningBalance = newBalance;
       for (const movement of subsequentMovements) {
         const prevBalance = runningBalance;
-        runningBalance = prevBalance.plus(movement.amount);
+        runningBalance = applyCashMovementToBalance(prevBalance, movement);
 
         await tx.cashMovement.update({
           where: { id: movement.id },
@@ -278,7 +279,7 @@ export class CashService {
         let runningBalance = newBalance;
         for (const movement of subsequentMovements) {
           const prevBalance = runningBalance;
-          runningBalance = prevBalance.plus(movement.amount);
+          runningBalance = applyCashMovementToBalance(prevBalance, movement);
 
           await tx.cashMovement.update({
             where: { id: movement.id },
@@ -357,7 +358,7 @@ export class CashService {
       // Recalcular saldos
       for (const mov of subsequentMovements) {
         const prevBalance = runningBalance;
-        runningBalance = prevBalance.plus(mov.amount);
+        runningBalance = applyCashMovementToBalance(prevBalance, mov);
 
         await tx.cashMovement.update({
           where: { id: mov.id },
@@ -424,13 +425,7 @@ export class CashService {
       // Recalcular saldos para todos los movimientos posteriores
       for (const movement of subsequentMovements) {
         const prevBalance = runningBalance;
-        
-        // Calcular nuevo saldo basado en el tipo de movimiento
-        if (movement.type === CashMovementType.ENTRADA) {
-          runningBalance = prevBalance.plus(movement.amount);
-        } else {
-          runningBalance = prevBalance.sub(movement.amount);
-        }
+        runningBalance = applyCashMovementToBalance(prevBalance, movement);
 
         await tx.cashMovement.update({
           where: { id: movement.id },
