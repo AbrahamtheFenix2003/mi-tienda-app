@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, AlertTriangle, Sparkles, Package, Menu, X, Home, Search, ShoppingCart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { fetchCategories } from '@/services/categoryService';
 import { fetchProducts } from '@/services/productService';
 import { Product } from '@mi-tienda/types';
@@ -48,8 +48,14 @@ const getErrorMessage = (error: unknown): string | undefined => {
   return error instanceof Error ? error.message : 'Ocurrió un error inesperado';
 };
 
+const buildRouteWithSearchParams = (pathname: string, params: URLSearchParams) => {
+  const queryString = params.toString();
+  return queryString ? `${pathname}?${queryString}` : pathname;
+};
+
 export default function HomeClient() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,8 +131,8 @@ export default function HomeClient() {
     // Solo actualizamos la URL; el modal se abrirá porque selectedProduct se deriva desde la URL
     const params = new URLSearchParams(searchParams.toString());
     params.set('product', product.id.toString());
-    router.push(`?${params.toString()}`, { scroll: false });
-  }, [router, searchParams]);
+    router.push(buildRouteWithSearchParams(pathname, params), { scroll: false });
+  }, [pathname, router, searchParams]);
 
   const handleScrollToTop = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -149,12 +155,11 @@ export default function HomeClient() {
     if (isModalOpen) {
       const params = new URLSearchParams(searchParams.toString());
       params.delete('product');
-      const nextUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
-      router.push(nextUrl, { scroll: false });
+      router.push(buildRouteWithSearchParams(pathname, params), { scroll: false });
     }
 
     setIsSidebarOpen(true);
-  }, [isModalOpen, router, searchParams]);
+  }, [isModalOpen, pathname, router, searchParams]);
 
   const handleSidebarClose = useCallback(() => {
     setIsSidebarOpen(false);
@@ -184,8 +189,8 @@ export default function HomeClient() {
     // Eliminamos el param de la URL; la derivación cerrará el modal
     const params = new URLSearchParams(searchParams.toString());
     params.delete('product');
-    router.push(`?${params.toString()}`, { scroll: false });
-  }, [router, searchParams]);
+    router.push(buildRouteWithSearchParams(pathname, params), { scroll: false });
+  }, [pathname, router, searchParams]);
 
   const handleCartOpen = useCallback(() => {
     setIsCartOpen(true);
