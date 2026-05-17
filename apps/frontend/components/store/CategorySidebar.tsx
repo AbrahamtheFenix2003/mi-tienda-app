@@ -1,13 +1,14 @@
 'use client';
 
 import { Category, Product } from '@mi-tienda/types';
-import { Grid3x3, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Grid3x3, ChevronRight } from 'lucide-react';
 
 interface CategorySidebarProps {
   categories: Category[];
   products: Product[];
   selectedCategoryId: number | null;
   onCategorySelect: (categoryId: number | null) => void;
+  errorMessage?: string;
 }
 
 export default function CategorySidebar({
@@ -15,6 +16,7 @@ export default function CategorySidebar({
   products,
   selectedCategoryId,
   onCategorySelect,
+  errorMessage,
 }: CategorySidebarProps) {
   // Count products by category
   const getProductCount = (categoryId: number | null) => {
@@ -55,7 +57,7 @@ export default function CategorySidebar({
         </button>
 
         {/* Individual Categories */}
-        {categories.map((category) => {
+        {!errorMessage && categories.map((category) => {
           const count = getProductCount(category.id);
           const isSelected = selectedCategoryId === category.id;
 
@@ -80,8 +82,17 @@ export default function CategorySidebar({
           );
         })}
 
+        {/* Error State */}
+        {errorMessage && (
+          <div className="px-4 py-6 text-center text-sm text-red-600">
+            <AlertTriangle className="mx-auto mb-2 h-5 w-5" />
+            <p className="font-medium">No se pudieron cargar las categorías</p>
+            <p className="mt-1 text-xs text-red-500">{errorMessage}</p>
+          </div>
+        )}
+
         {/* Empty State */}
-        {categories.length === 0 && (
+        {!errorMessage && categories.length === 0 && (
           <div className="px-4 py-8 text-center text-gray-500 text-sm">
             No hay categorías disponibles
           </div>

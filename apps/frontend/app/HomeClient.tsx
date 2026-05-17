@@ -43,6 +43,11 @@ const isVisibleElement = (element: HTMLElement) => (
   element.isConnected && element.getClientRects().length > 0
 );
 
+const getErrorMessage = (error: unknown): string | undefined => {
+  if (!error) return undefined;
+  return error instanceof Error ? error.message : 'Ocurrió un error inesperado';
+};
+
 export default function HomeClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,7 +63,7 @@ export default function HomeClient() {
   const { totalItems } = useCart();
 
   // Fetch categories
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
   });
@@ -191,6 +196,8 @@ export default function HomeClient() {
   }, []);
 
   const isLoading = categoriesLoading || productsLoading;
+  const categoriesErrorMessage = getErrorMessage(categoriesError);
+  const productsErrorMessage = getErrorMessage(productsError);
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -296,7 +303,7 @@ export default function HomeClient() {
             <AlertTriangle className="h-16 w-16 text-red-500 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Error al cargar productos</h3>
             <p className="text-gray-600">
-              {productsError instanceof Error ? productsError.message : 'Ocurrió un error inesperado'}
+              {productsErrorMessage}
             </p>
           </div>
         )}
@@ -318,7 +325,9 @@ export default function HomeClient() {
                 Categorias
               </button>
               <span className="text-xs text-gray-500">
-                {categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}
+                {categoriesError
+                  ? 'Error al cargar categorías'
+                  : `${categories.length} ${categories.length === 1 ? 'categoría' : 'categorías'}`}
               </span>
             </div>
 
@@ -332,6 +341,7 @@ export default function HomeClient() {
                     products={products}
                     selectedCategoryId={selectedCategoryId}
                     onCategorySelect={handleCategorySelect}
+                    errorMessage={categoriesErrorMessage}
                   />
                   <ContactInfo />
                 </div>
@@ -431,6 +441,7 @@ export default function HomeClient() {
                 products={products}
                 selectedCategoryId={selectedCategoryId}
                 onCategorySelect={handleCategorySelect}
+                errorMessage={categoriesErrorMessage}
               />
               <ContactInfo />
             </div>
