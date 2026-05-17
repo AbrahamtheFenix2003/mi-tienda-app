@@ -11,7 +11,7 @@ import { Product } from '@mi-tienda/types';
 import PublicHeader from '@/components/layout/PublicHeader';
 import CategorySidebar from '@/components/store/CategorySidebar';
 import ContactInfo from '@/components/store/ContactInfo';
-import ProductCard from '@/components/store/ProductCard';
+import ProductGrid from '@/components/store/ProductGrid';
 import ProductDetailModal from '@/components/store/ProductDetailModal';
 import CartDrawer from '@/components/store/CartDrawer';
 import { useCart } from '@/hooks/useCart';
@@ -200,15 +200,7 @@ export default function HomeClient() {
                     <Sparkles className="h-6 w-6 text-rose-500" />
                     <h2 className="text-2xl font-bold text-gray-900">Productos Destacados</h2>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4 min-[1400px]:grid-cols-5 min-[1800px]:grid-cols-6">
-                    {featuredProducts.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        onClick={handleProductSelect}
-                      />
-                    ))}
-                  </div>
+                  <ProductGrid products={featuredProducts} onProductSelect={handleProductSelect} />
                 </section>
               )}
 
@@ -229,15 +221,7 @@ export default function HomeClient() {
 
                 {/* Products Grid */}
                 {filteredProducts.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4 min-[1400px]:grid-cols-5 min-[1800px]:grid-cols-6">
-                    {filteredProducts.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        onClick={handleProductSelect}
-                      />
-                    ))}
-                  </div>
+                  <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-lg border border-gray-200">
                     <Package className="h-16 w-16 text-gray-300 mb-4" />
