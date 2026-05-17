@@ -16,6 +16,13 @@ import ProductDetailModal from '@/components/store/ProductDetailModal';
 import CartDrawer from '@/components/store/CartDrawer';
 import { useCart } from '@/hooks/useCart';
 
+const parseProductIdParam = (value: string | null): number | null => {
+  if (!value || !/^\d+$/.test(value)) return null;
+
+  const productId = Number(value);
+  return Number.isSafeInteger(productId) && productId > 0 ? productId : null;
+};
+
 export default function HomeClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,9 +47,9 @@ export default function HomeClient() {
 
   // Derivar producto seleccionado e estado del modal desde la URL (evita setState en effect)
   const productIdParam = searchParams.get('product');
-  const productId = productIdParam ? parseInt(productIdParam, 10) : null;
+  const productId = parseProductIdParam(productIdParam);
   const selectedProduct = useMemo(() => {
-    if (productId === null || Number.isNaN(productId)) return null;
+    if (productId === null) return null;
     return products.find(p => p.id === productId) ?? null;
   }, [products, productId]);
   const isModalOpen = selectedProduct !== null;
