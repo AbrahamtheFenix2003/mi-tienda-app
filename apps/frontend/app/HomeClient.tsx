@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, AlertTriangle, Sparkles, Package, Menu, X, Home, Search, ShoppingCart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -23,6 +23,26 @@ const parseProductIdParam = (value: string | null): number | null => {
   return Number.isSafeInteger(productId) && productId > 0 ? productId : null;
 };
 
+const FOCUSABLE_DRAWER_ELEMENTS = [
+  'a[href]',
+  'button:not([disabled])',
+  'summary',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'audio[controls]',
+  'video[controls]',
+  '[contenteditable="true"]',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+const MOBILE_FILTERS_DRAWER_ID = 'mobile-filters-drawer';
+const MOBILE_FILTERS_TITLE_ID = 'mobile-filters-title';
+
+const isVisibleElement = (element: HTMLElement) => (
+  element.isConnected && element.getClientRects().length > 0
+);
+
 export default function HomeClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,6 +51,10 @@ export default function HomeClient() {
   // selectedProduct and isModalOpen are derived from the URL (?product=ID)
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const mobileDrawerRef = useRef<HTMLDivElement | null>(null);
+  const mobileDrawerCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusedElementRef = useRef<HTMLElement | null>(null);
+  const focusRestoreFrameRef = useRef<number | null>(null);
   const { totalItems } = useCart();
 
   // Fetch categories
@@ -105,10 +129,51 @@ export default function HomeClient() {
     }
   }, []);
 
+  const handleSidebarOpen = useCallback(() => {
+    if (focusRestoreFrameRef.current !== null) {
+      window.cancelAnimationFrame(focusRestoreFrameRef.current);
+      focusRestoreFrameRef.current = null;
+    }
+
+    previousFocusedElementRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
+    setIsCartOpen(false);
+
+    if (isModalOpen) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('product');
+      const nextUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      router.push(nextUrl, { scroll: false });
+    }
+
+    setIsSidebarOpen(true);
+  }, [isModalOpen, router, searchParams]);
+
+  const handleSidebarClose = useCallback(() => {
+    setIsSidebarOpen(false);
+
+    if (focusRestoreFrameRef.current !== null) {
+      window.cancelAnimationFrame(focusRestoreFrameRef.current);
+    }
+
+    focusRestoreFrameRef.current = window.requestAnimationFrame(() => {
+      const previousFocusedElement = previousFocusedElementRef.current;
+
+      if (previousFocusedElement && isVisibleElement(previousFocusedElement)) {
+        previousFocusedElement.focus();
+      }
+
+      previousFocusedElementRef.current = null;
+      focusRestoreFrameRef.current = null;
+    });
+  }, []);
+
   const handleCategorySelect = useCallback((categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
-    setIsSidebarOpen(false);
-  }, []);
+    handleSidebarClose();
+  }, [handleSidebarClose]);
 
   const handleCloseModal = useCallback(() => {
     // Eliminamos el param de la URL; la derivación cerrará el modal
@@ -126,6 +191,85 @@ export default function HomeClient() {
   }, []);
 
   const isLoading = categoriesLoading || productsLoading;
+
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const desktopMediaQuery = window.matchMedia('(min-width: 1024px)');
+
+    document.body.style.overflow = 'hidden';
+    mobileDrawerCloseButtonRef.current?.focus();
+
+    const handleDesktopBreakpoint = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        handleSidebarClose();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleSidebarClose();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !mobileDrawerRef.current) return;
+
+      const focusableElements = Array.from(
+        mobileDrawerRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_DRAWER_ELEMENTS)
+      ).filter(element => !element.hasAttribute('disabled') && isVisibleElement(element));
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        mobileDrawerRef.current.focus();
+        return;
+      }
+
+      const firstFocusableElement = focusableElements[0];
+      const lastFocusableElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (
+        activeElement === mobileDrawerRef.current ||
+        !(activeElement instanceof HTMLElement) ||
+        !mobileDrawerRef.current.contains(activeElement)
+      ) {
+        event.preventDefault();
+        const nextFocusableElement = event.shiftKey ? lastFocusableElement : firstFocusableElement;
+        nextFocusableElement.focus();
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstFocusableElement) {
+        event.preventDefault();
+        lastFocusableElement.focus();
+        return;
+      }
+
+      if (!event.shiftKey && activeElement === lastFocusableElement) {
+        event.preventDefault();
+        firstFocusableElement.focus();
+      }
+    };
+
+    desktopMediaQuery.addEventListener('change', handleDesktopBreakpoint);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      desktopMediaQuery.removeEventListener('change', handleDesktopBreakpoint);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleSidebarClose, isSidebarOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (focusRestoreFrameRef.current !== null) {
+        window.cancelAnimationFrame(focusRestoreFrameRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -164,7 +308,10 @@ export default function HomeClient() {
             <div className="mb-4 flex items-center justify-between lg:hidden">
               <button
                 type="button"
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={handleSidebarOpen}
+                aria-controls={MOBILE_FILTERS_DRAWER_ID}
+                aria-expanded={isSidebarOpen}
+                aria-haspopup="dialog"
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-rose-400 hover:text-rose-600"
               >
                 <Menu className="h-4 w-4" />
@@ -246,20 +393,32 @@ export default function HomeClient() {
 
       {/* Mobile Sidebar Drawer */}
       {isSidebarOpen && (
-        <div className="fixed inset-0 z-40 flex justify-start lg:hidden" role="dialog" aria-modal="true">
+        <div
+          id={MOBILE_FILTERS_DRAWER_ID}
+          className="fixed inset-0 z-40 flex justify-start lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={MOBILE_FILTERS_TITLE_ID}
+        >
           <div
             className="fixed inset-0 bg-black/40 transition-opacity"
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={handleSidebarClose}
+            aria-hidden="true"
           />
-          <div className="relative mr-auto flex h-full w-64 max-w-full flex-col bg-white shadow-2xl">
+          <div
+            ref={mobileDrawerRef}
+            className="relative mr-auto flex h-full w-64 max-w-full flex-col bg-white shadow-2xl"
+            tabIndex={-1}
+          >
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">Filtros</p>
-                <h3 className="text-base font-semibold text-gray-900">Categorias</h3>
+                <h3 id={MOBILE_FILTERS_TITLE_ID} className="text-base font-semibold text-gray-900">Categorias</h3>
               </div>
               <button
+                ref={mobileDrawerCloseButtonRef}
                 type="button"
-                onClick={() => setIsSidebarOpen(false)}
+                onClick={handleSidebarClose}
                 className="rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 aria-label="Cerrar filtros"
               >
@@ -293,7 +452,10 @@ export default function HomeClient() {
             </button>
             <button
               type="button"
-              onClick={() => setIsSidebarOpen(true)}
+              onClick={handleSidebarOpen}
+              aria-controls={MOBILE_FILTERS_DRAWER_ID}
+              aria-expanded={isSidebarOpen}
+              aria-haspopup="dialog"
               className="flex flex-col items-center gap-1 text-gray-600 transition hover:text-rose-600"
             >
               <Search className="h-5 w-5" />
