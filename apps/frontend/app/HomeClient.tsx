@@ -322,7 +322,7 @@ export default function HomeClient() {
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-rose-400 hover:text-rose-600"
               >
                 <Menu className="h-4 w-4" />
-                Categorias
+                Categorías
               </button>
               <span className="text-xs text-gray-500">
                 {categoriesError
@@ -423,7 +423,7 @@ export default function HomeClient() {
             <div className="flex items-center justify-between border-b px-4 py-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">Filtros</p>
-                <h3 id={MOBILE_FILTERS_TITLE_ID} className="text-base font-semibold text-gray-900">Categorias</h3>
+                <h3 id={MOBILE_FILTERS_TITLE_ID} className="text-base font-semibold text-gray-900">Categorías</h3>
               </div>
               <button
                 ref={mobileDrawerCloseButtonRef}
@@ -470,7 +470,7 @@ export default function HomeClient() {
               className="flex flex-col items-center gap-1 text-gray-600 transition hover:text-rose-600"
             >
               <Search className="h-5 w-5" />
-              Categorias
+              Categorías
             </button>
             <button
               type="button"

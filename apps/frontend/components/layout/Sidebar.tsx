@@ -15,7 +15,7 @@ import {
   Truck,          // Icono para "Compras"
   Wallet,         // Icono para "Caja"
   Home,           // Icono para "Ver Tienda"
-  FolderOpen,     // Icono para "Categorias"
+  FolderOpen,     // Icono para "Categorías"
 } from 'lucide-react';
 import Link from 'next/link'; // Usamos el Link de Next.js
 import { usePathname } from 'next/navigation'; // Hook para saber la ruta activa
@@ -33,7 +33,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }, // Visible para todos
   { href: '/productos', label: 'Productos', icon: Package, requiredRoles: ['SUPER_ADMIN'] },
-  { href: '/categorias', label: 'Categorias', icon: FolderOpen, requiredRoles: ['SUPER_ADMIN'] },
+  { href: '/categorias', label: 'Categorías', icon: FolderOpen, requiredRoles: ['SUPER_ADMIN'] },
   { href: '/proveedores', label: 'Proveedores', icon: Building2, requiredRoles: ['SUPER_ADMIN', 'SUPER_VENDEDOR'] },
   { href: '/punto-de-ventas', label: 'Punto de ventas', icon: ShoppingCart }, // Visible para todos
   { href: '/reportes', label: 'Reportes', icon: AreaChart, requiredRoles: ['SUPER_ADMIN', 'SUPER_VENDEDOR'] },
