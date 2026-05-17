@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma.js';
 import { CashMovementWithRelations, CreateManualMovementInput, UpdateManualMovementInput } from '@mi-tienda/types';
 import { Prisma, CashMovementType, PaymentMethod } from '@prisma/client';
+import { applyCashMovementToBalance } from '../utils/cash-movement.js';
 
 // Definir tipo para los resultados de Prisma con relaciones incluidas
 type PrismaCashMovementWithRelations = Prisma.CashMovementGetPayload<{
@@ -42,9 +43,10 @@ export class CashService {
   async getCashMovements(): Promise<CashMovementWithRelations[]> {
     const movements = await prisma.cashMovement.findMany({
       include: cashMovementInclude,
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { date: 'desc' },
+        { createdAt: 'desc' }
+      ],
     });
 
     return movements.map(mapCashMovementFromPrisma);
@@ -52,12 +54,81 @@ export class CashService {
 
   async createManualMovement(data: CreateManualMovementInput, userId: string): Promise<CashMovementWithRelations> {
     return await prisma.$transaction(async (tx) => {
-      // Obtener el último movimiento para calcular el saldo anterior
-      const lastMovement = await tx.cashMovement.findFirst({
-        orderBy: { date: 'desc' },
+      // Lógica corregida para detección de fechas y desempate temporal
+      const now = new Date();
+
+      // 1. Obtener la fecha actual en Perú como string "YYYY-MM-DD"
+      const peruFormatter = new Intl.DateTimeFormat('en-CA', { // en-CA usa formato ISO YYYY-MM-DD
+        timeZone: 'America/Lima',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const todayPeru = peruFormatter.format(now);
+
+      // 2. Obtener la fecha del input como string "YYYY-MM-DD"
+      // Evitamos crear un objeto Date primero para no sufrir el desfase de zona horaria (UTC-5)
+      const inputDateString = typeof data.date === 'string' 
+        ? data.date.split('T')[0] 
+        : new Date(data.date).toISOString().split('T')[0];
+
+      const isToday = inputDateString === todayPeru;
+
+      // Parseamos la fecha de entrada una sola vez
+      const parsedInputDate = new Date(data.date);
+
+      // Detectamos si el input original era solo una fecha (ej. "YYYY-MM-DD")
+      // Esto es un buen proxy para saber si el usuario especificó una hora o no.
+      const isDateOnlyInput = typeof data.date === 'string' && data.date.length === 10;
+      
+      let movementDate: Date;
+      if (isToday) {
+        if (isDateOnlyInput) {
+          // Si es hoy y el input fue solo fecha, usamos la hora actual (comportamiento actual deseado para "registrar ahora")
+          movementDate = now;
+        } else {
+          // Si es hoy y el input incluía una hora específica, respetamos esa hora
+          movementDate = parsedInputDate;
+        }
+      } else {
+        // Si no es hoy, siempre respetamos la fecha y hora del input
+        movementDate = parsedInputDate;
+      }
+
+      // 4. Lógica de Desempate Temporal (Solo si es hoy)
+      // Si hay una compra u otro movimiento registrado en este preciso instante,
+      // empujamos este movimiento 1 segundo adelante para asegurar que sea el último.
+      if (isToday) {
+        const lastRegisteredMovement = await tx.cashMovement.findFirst({
+          where: {
+            date: {
+              // CRÍTICO: Solo buscamos conflictos con movimientos que hayan ocurrido hasta AHORA.
+              // Si existe un movimiento futuro (ej. año 2030 por error), lo ignoramos para no
+              // "teletransportar" este movimiento al futuro.
+              lte: new Date(now.getTime() + 60000) // +1 minuto de margen de seguridad
+            }
+          },
+          orderBy: { date: 'desc' }
+        });
+
+        if (lastRegisteredMovement && lastRegisteredMovement.date >= movementDate) {
+          movementDate = new Date(lastRegisteredMovement.date.getTime() + 1000);
+        }
+      }
+      
+      // Obtener el movimiento inmediatamente anterior en fecha
+      const previousMovement = await tx.cashMovement.findFirst({
+        where: {
+          date: {
+            lt: movementDate,
+          },
+        },
+        orderBy: {
+          date: 'desc',
+        },
       });
 
-      const previousBalance = lastMovement ? lastMovement.newBalance : new Prisma.Decimal(0);
+      const previousBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
       
       // Calcular el monto del movimiento (positivo para entradas, negativo para salidas)
       const movementAmount = data.type === 'SALIDA'
@@ -76,13 +147,43 @@ export class CashService {
           newBalance: newBalance,
           userId: userId,
           referenceId: null, // Marca como movimiento manual
-          date: new Date(data.date),
+          date: movementDate,
           description: data.description,
           category: data.category,
           paymentMethod: data.paymentMethod as PaymentMethod,
         },
         include: cashMovementInclude,
       });
+
+      // Recalcular saldos de todos los movimientos posteriores
+      const subsequentMovements = await tx.cashMovement.findMany({
+        where: {
+          date: {
+            gte: movementDate,
+          },
+          id: {
+            not: newMovement.id,
+          },
+        },
+        orderBy: [
+          { date: 'asc' },
+          { createdAt: 'asc' }
+        ],
+      });
+
+      let runningBalance = newBalance;
+      for (const movement of subsequentMovements) {
+        const prevBalance = runningBalance;
+        runningBalance = applyCashMovementToBalance(prevBalance, movement);
+
+        await tx.cashMovement.update({
+          where: { id: movement.id },
+          data: {
+            previousBalance: prevBalance,
+            newBalance: runningBalance,
+          },
+        });
+      }
 
       return mapCashMovementFromPrisma(newMovement);
     });
@@ -163,18 +264,22 @@ export class CashService {
         const subsequentMovements = await tx.cashMovement.findMany({
           where: {
             date: {
-              gt: currentMovement.date,
+              gte: currentMovement.date,
+            },
+            id: {
+              not: updatedMovement.id,
             },
           },
-          orderBy: {
-            date: 'asc',
-          },
+          orderBy: [
+            { date: 'asc' },
+            { createdAt: 'asc' }
+          ],
         });
 
         let runningBalance = newBalance;
         for (const movement of subsequentMovements) {
           const prevBalance = runningBalance;
-          runningBalance = prevBalance.plus(movement.amount);
+          runningBalance = applyCashMovementToBalance(prevBalance, movement);
 
           await tx.cashMovement.update({
             where: { id: movement.id },
@@ -226,10 +331,14 @@ export class CashService {
           date: {
             gte: movement.date,
           },
+          id: {
+            not: movement.id,
+          },
         },
-        orderBy: {
-          date: 'asc',
-        },
+        orderBy: [
+          { date: 'asc' },
+          { createdAt: 'asc' }
+        ],
       });
 
       // Obtener el último saldo válido antes del movimiento eliminado
@@ -249,7 +358,7 @@ export class CashService {
       // Recalcular saldos
       for (const mov of subsequentMovements) {
         const prevBalance = runningBalance;
-        runningBalance = prevBalance.plus(mov.amount);
+        runningBalance = applyCashMovementToBalance(prevBalance, mov);
 
         await tx.cashMovement.update({
           where: { id: mov.id },
@@ -257,6 +366,73 @@ export class CashService {
             previousBalance: prevBalance,
             newBalance: runningBalance,
           },
+        });
+      }
+    });
+  }
+
+  /**
+   * Elimina un movimiento de caja específico y recalcula todos los saldos posteriores
+   * Usado para anulación de ventas/compras donde se quiere eliminar completamente el movimiento original
+   */
+  async deleteCashMovementAndRecalculate(referenceId: string): Promise<void> {
+    return await prisma.$transaction(async (tx) => {
+      // Buscar el movimiento de caja asociado a la venta/compra
+      const movementToDelete = await tx.cashMovement.findFirst({
+        where: { referenceId }
+      });
+
+      if (!movementToDelete) {
+        // No hay movimiento de caja asociado, no hacer nada
+        return;
+      }
+
+      // Eliminar el movimiento de caja
+      await tx.cashMovement.delete({
+        where: { id: movementToDelete.id }
+      });
+
+      // Recalcular saldos de todos los movimientos posteriores
+      const subsequentMovements = await tx.cashMovement.findMany({
+        where: {
+          date: {
+            gte: movementToDelete.date
+          },
+          id: {
+            not: movementToDelete.id
+          }
+        },
+        orderBy: [
+          { date: 'asc' },
+          { createdAt: 'asc' }
+        ]
+      });
+
+      // Obtener el último saldo válido antes del movimiento eliminado
+      const previousMovement = await tx.cashMovement.findFirst({
+        where: {
+          date: {
+            lt: movementToDelete.date
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      });
+
+      let runningBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
+
+      // Recalcular saldos para todos los movimientos posteriores
+      for (const movement of subsequentMovements) {
+        const prevBalance = runningBalance;
+        runningBalance = applyCashMovementToBalance(prevBalance, movement);
+
+        await tx.cashMovement.update({
+          where: { id: movement.id },
+          data: {
+            previousBalance: prevBalance,
+            newBalance: runningBalance
+          }
         });
       }
     });

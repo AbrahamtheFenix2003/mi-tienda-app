@@ -56,7 +56,9 @@ export default function PublicHeader({ products, onProductSelect, onSearchChange
                 <User className="h-4 w-4" />
                 Iniciar Sesión
               </Link>
-              <CartButton onClick={onCartClick} />
+              <div className="hidden lg:block">
+                <CartButton onClick={onCartClick} />
+              </div>
             </div>
           </div>
         </div>

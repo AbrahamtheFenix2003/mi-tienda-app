@@ -140,20 +140,40 @@ export const PurchaseTable = ({ purchases, onViewDetails, onAnnul }: PurchaseTab
                   >
                     <Eye className="h-4 w-4" />
                   </button>
-                  <Link
-                    href={`/compras/editar/${purchase.id}`}
-                    className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full transition-colors inline-flex"
-                    title="Editar Compra"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Link>
-                  <button
-                    onClick={() => onAnnul(purchase)}
-                    className="p-2 text-red-600 hover:text-red-900 hover:bg-red-100 rounded-full transition-colors"
-                    title="Anular Compra"
-                  >
-                    <FileX className="h-4 w-4" />
-                  </button>
+                  {purchase.status === 'ANULADA' ? (
+                    <button
+                      disabled
+                      className="p-2 text-gray-400 cursor-not-allowed rounded-full transition-colors inline-flex"
+                      title="Compra anulada - no se puede editar"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/compras/editar/${purchase.id}`}
+                      className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full transition-colors inline-flex"
+                      title="Editar Compra"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Link>
+                  )}
+                  {purchase.status === 'ANULADA' ? (
+                    <button
+                      disabled
+                      className="p-2 text-gray-400 cursor-not-allowed rounded-full transition-colors inline-flex"
+                      title="Compra ya está anulada"
+                    >
+                      <FileX className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onAnnul(purchase)}
+                      className="p-2 text-red-600 hover:text-red-900 hover:bg-red-100 rounded-full transition-colors"
+                      title="Anular Compra"
+                    >
+                      <FileX className="h-4 w-4" />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

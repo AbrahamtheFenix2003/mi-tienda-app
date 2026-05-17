@@ -7,12 +7,20 @@ import type { CashMovementWithRelations } from "@mi-tienda/types";
 import { getCashMovements, deleteManualMovement } from "@/services/cashService";
 import CashMovementsTable from "@/components/admin/CashMovementsTable";
 import { ManualMovementModal } from "@/components/admin/ManualMovementModal";
+import { CashMovementDetailsModal } from "@/components/admin/CashMovementDetailsModal";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+
+const getSignedMovementAmount = (movement: Pick<CashMovementWithRelations, 'type' | 'amount'>) => {
+  const normalizedAmount = Math.abs(Number(movement.amount ?? 0));
+  return movement.type === 'SALIDA' ? -normalizedAmount : normalizedAmount;
+};
 
 export default function CajaPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [movementToEdit, setMovementToEdit] = useState<CashMovementWithRelations | null>(null);
+  const [movementToView, setMovementToView] = useState<CashMovementWithRelations | null>(null);
   const [filterType, setFilterType] = useState<'TODOS' | 'ENTRADA' | 'SALIDA'>('TODOS');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -34,11 +42,54 @@ export default function CajaPage() {
     },
   });
 
+  const normalizedData = React.useMemo(() => {
+    if (!data?.length) return [];
+
+    const chronologicalMovements = [...data].sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt).getTime();
+      const dateB = new Date(b.date || b.createdAt).getTime();
+
+      if (dateA !== dateB) {
+        return dateA - dateB;
+      }
+
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+
+    let runningBalance = Number(chronologicalMovements[0]?.previousBalance ?? 0);
+
+    const recalculatedMovements = chronologicalMovements.map((movement, index) => {
+      const previousBalance = index === 0
+        ? Number(movement.previousBalance ?? 0)
+        : runningBalance;
+      const newBalance = previousBalance + getSignedMovementAmount(movement);
+
+      runningBalance = newBalance;
+
+      return {
+        ...movement,
+        previousBalance: previousBalance as unknown as CashMovementWithRelations['previousBalance'],
+        newBalance: newBalance as unknown as CashMovementWithRelations['newBalance'],
+      };
+    });
+
+    return recalculatedMovements.sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt).getTime();
+      const dateB = new Date(b.date || b.createdAt).getTime();
+
+      if (dateA !== dateB) {
+        return dateB - dateA;
+      }
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [data]);
+
   // Filtrar movimientos por tipo y rango de fechas
   const filteredData = React.useMemo(() => {
-    if (!data) return [];
+    if (!normalizedData.length) return [];
 
-    return data.filter((movement) => {
+    return normalizedData.filter((movement) => {
       // Filtro por tipo
       if (filterType !== 'TODOS' && movement.type !== filterType) {
         return false;
@@ -63,22 +114,22 @@ export default function CajaPage() {
 
       return true;
     });
-  }, [data, filterType, dateFrom, dateTo]);
+  }, [normalizedData, filterType, dateFrom, dateTo]);
 
-  // Lógica de Saldo: data ya está ordenado por fecha descendente desde el backend
-  const currentBalance = data && data.length > 0
-    ? data[0].newBalance
+  // Lógica de saldo usando movimientos recalculados para corregir inconsistencias históricas
+  const currentBalance = normalizedData.length > 0
+    ? normalizedData[0].newBalance
     : 0;
 
   // Calcular totales de ingresos y egresos en datos filtrados
   const totals = React.useMemo(() => {
     const ingresos = filteredData
       .filter((mov) => mov.type === 'ENTRADA')
-      .reduce((sum, mov) => sum + Number(mov.amount), 0);
+      .reduce((sum, mov) => sum + Math.abs(getSignedMovementAmount(mov)), 0);
 
     const egresos = filteredData
       .filter((mov) => mov.type === 'SALIDA')
-      .reduce((sum, mov) => sum + Number(mov.amount), 0);
+      .reduce((sum, mov) => sum + Math.abs(getSignedMovementAmount(mov)), 0);
 
     return { ingresos, egresos };
   }, [filteredData]);
@@ -99,10 +150,15 @@ export default function CajaPage() {
     setIsModalOpen(true);
   };
 
+  const handleView = (movement: CashMovementWithRelations) => {
+    setMovementToView(movement);
+    setIsDetailsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Tarjeta de Saldo Actual */}
-      <Card className="mb-4 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+      <Card className="mb-4 bg-linear-to-r from-blue-50 to-blue-100 border-blue-200">
         <CardHeader>
           <CardTitle className="text-blue-900">Saldo Actual en Caja</CardTitle>
         </CardHeader>
@@ -116,7 +172,7 @@ export default function CajaPage() {
       {/* Tarjetas de Totales de Ingresos y Egresos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Tarjeta de Ingresos */}
-        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+        <Card className="bg-linear-to-r from-green-50 to-green-100 border-green-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-green-900">Total de Ingresos</CardTitle>
@@ -131,7 +187,7 @@ export default function CajaPage() {
         </Card>
 
         {/* Tarjeta de Egresos */}
-        <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+        <Card className="bg-linear-to-r from-red-50 to-red-100 border-red-200">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-red-900">Total de Egresos</CardTitle>
@@ -240,13 +296,34 @@ export default function CajaPage() {
         </div>
       )}
 
-      {data && <CashMovementsTable data={filteredData} onEdit={handleEdit} onDelete={handleDelete} />}
+      {data && (
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle>Listado de Movimientos</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 sm:p-0">
+            <CashMovementsTable
+              data={filteredData}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onView={handleView}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Modal para crear/editar movimientos manuales */}
       <ManualMovementModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         movementToEdit={movementToEdit}
+      />
+
+      {/* Modal para ver detalles */}
+      <CashMovementDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        movement={movementToView}
       />
     </div>
   );

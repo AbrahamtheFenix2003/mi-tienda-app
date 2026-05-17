@@ -4,6 +4,7 @@ import "./globals.css";
 import QueryProvider from "@/components/QueryProvider";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/contexts/CartContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 
 // Definición de metadatos (tipado estricto)
 export const metadata: Metadata = {
@@ -23,9 +24,11 @@ export default function RootLayout({
         {/* 2. Envuelve toda la aplicación con el proveedor */}
         <AuthProvider>
           <CartProvider>
-            <QueryProvider>
-              {children}
-            </QueryProvider>
+            <ToastProvider>
+              <QueryProvider>
+                {children}
+              </QueryProvider>
+            </ToastProvider>
           </CartProvider>
         </AuthProvider>
       </body>

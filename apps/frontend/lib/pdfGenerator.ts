@@ -216,19 +216,21 @@ export const generateStockReportPDF = (
   doc.text('Detalle de Productos:', 14, currentY);
   currentY += 7;
 
-  const head = [['Producto', 'Categoría', 'Stock', 'Precio', 'Valor Total', 'Estado']];
+  const head = [['Producto', 'Categoría', 'Stock', 'Precio Venta', 'Precio Costo', 'Valor Total', 'Estado']];
 
   const body = products.map((product) => {
     const stock = product.stock ?? 0;
-    const price = toNumber(product.acquisitionCost ?? product.price);
-    const totalValue = price * stock;
+    const salePrice = toNumber(product.price);
+    const acquisitionPrice = toNumber(product.acquisitionCost ?? product.price);
+    const totalValue = acquisitionPrice * stock;
     const hasStock = stock > 0;
 
     return [
       product.name,
       product.category?.name ?? 'Sin categoría',
       stock.toString(),
-      formatCurrency(product.price),
+      formatCurrency(salePrice),
+      product.acquisitionCost ? formatCurrency(product.acquisitionCost) : 'N/A',
       formatCurrency(totalValue),
       hasStock ? 'SI' : 'NO'
     ];
@@ -253,16 +255,17 @@ export const generateStockReportPDF = (
       halign: 'left'
     },
     columnStyles: {
-      0: { cellWidth: 55 }, // Producto
-      1: { cellWidth: 35 }, // Categoría
-      2: { cellWidth: 20, halign: 'center' }, // Stock
-      3: { cellWidth: 25, halign: 'right' }, // Precio
-      4: { cellWidth: 30, halign: 'right' }, // Valor Total
-      5: { cellWidth: 20, halign: 'center' } // Estado
+      0: { cellWidth: 50 }, // Producto
+      1: { cellWidth: 30 }, // Categoría
+      2: { cellWidth: 18, halign: 'center' }, // Stock
+      3: { cellWidth: 22, halign: 'right' }, // Precio Venta
+      4: { cellWidth: 22, halign: 'right' }, // Precio Adquisición
+      5: { cellWidth: 28, halign: 'right' }, // Valor Total
+      6: { cellWidth: 18, halign: 'center' } // Estado
     },
     didParseCell: (data) => {
-      // Colorear la columna de Estado según el valor
-      if (data.column.index === 5 && data.section === 'body') {
+      // Colorear la columna de Estado según el valor (ahora es la columna 6)
+      if (data.column.index === 6 && data.section === 'body') {
         const cellValue = data.cell.text[0];
         if (cellValue === 'SI') {
           data.cell.styles.textColor = [255, 255, 255]; // Blanco

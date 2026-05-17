@@ -20,7 +20,7 @@ const formatPrice = (price: string | null | undefined): string => {
     style: 'currency',
     currency: 'PEN',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(numPrice);
 };
 
@@ -71,23 +71,23 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
         <div className="space-y-6">
           {/* Sección 1: Datos Generales */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <strong>Cliente:</strong> {sale.customerName}
+            <div className="text-black">
+              <strong className="text-black">Cliente:</strong> {sale.customerName}
             </div>
-            <div>
-              <strong>Fecha:</strong> {formatDate(sale.createdAt)}
+            <div className="text-black">
+              <strong className="text-black">Fecha:</strong> {formatDate(sale.createdAt)}
             </div>
-            <div>
-              <strong>Vendedor:</strong> {sale.soldBy?.name || 'N/A'}
+            <div className="text-black">
+              <strong className="text-black">Vendedor:</strong> {sale.soldBy?.name || 'N/A'}
             </div>
-            <div>
-              <strong>Pago:</strong> {sale.paymentMethod}
+            <div className="text-black">
+              <strong className="text-black">Pago:</strong> {sale.paymentMethod}
             </div>
-            <div>
-              <strong>Entrega:</strong> {sale.deliveryMethod}
+            <div className="text-black">
+              <strong className="text-black">Entrega:</strong> {sale.deliveryMethod}
             </div>
-            <div>
-              <strong>Estado:</strong>{' '}
+            <div className="text-black">
+              <strong className="text-black">Estado:</strong>{' '}
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(sale.status)}`}>
                 {sale.status}
               </span>
@@ -118,16 +118,16 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
                   const subtotal = parseFloat(item.price) * item.quantity;
                   return (
                     <tr key={item.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-black">
                         {item.product?.name || 'Producto no encontrado'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-black">
                         {item.quantity}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-black">
                         {formatPrice(item.price)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-black">
                         {formatPrice(subtotal.toString())}
                       </td>
                     </tr>
@@ -139,17 +139,17 @@ export const SaleDetailsModal: React.FC<SaleDetailsModalProps> = ({
 
           {/* Sección 3: Resumen Financiero */}
           <div className="text-right space-y-2 mt-4">
-            <div>
-              Subtotal: {formatPrice(sale.subtotalAmount)}
+            <div className="text-black">
+              <span className="text-black font-medium">Subtotal:</span> {formatPrice(sale.subtotalAmount)}
             </div>
-            <div>
-              Envío: {formatPrice(sale.deliveryCost)}
+            <div className="text-black">
+              <span className="text-black font-medium">Envío:</span> {formatPrice(sale.deliveryCost)}
             </div>
-            <div className="text-xl font-bold">
-              Total: {formatPrice(sale.totalAmount)}
+            <div className="text-xl font-bold text-black">
+              <span className="text-black">Total:</span> {formatPrice(sale.totalAmount)}
             </div>
             <div className="text-lg text-green-600 font-semibold">
-              Ganancia: {formatPrice(sale.profit)}
+              <span className="text-green-800">Ganancia:</span> {formatPrice(sale.profit)}
             </div>
           </div>
 

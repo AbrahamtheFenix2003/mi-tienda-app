@@ -115,6 +115,21 @@ export const SaleForm = ({ form, onSubmit, isLoading, products }: SaleFormProps)
     setValue('items', updatedItems);
   };
 
+  // Actualizar precio de un item sin restricción de precio mínimo
+  const updateItemPrice = (index: number, newPrice: number) => {
+    const currentItems = watch('items');
+    
+    // Validar que el precio sea mayor que 0
+    const validatedPrice = Math.max(0.01, newPrice);
+    
+    const updatedItems = [...currentItems];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      price: validatedPrice
+    };
+    setValue('items', updatedItems);
+  };
+
   // Calcular subtotal para un item
   const calculateSubtotal = (item: { quantity?: number; price?: number }) => {
     return (item.quantity || 0) * (item.price || 0);
@@ -227,6 +242,8 @@ export const SaleForm = ({ form, onSubmit, isLoading, products }: SaleFormProps)
           items={cartItems}
           onRemoveItem={remove}
           onUpdateQuantity={updateItemQuantity}
+          onUpdatePrice={updateItemPrice}
+          allowPriceEdit={true}
         />
         
         {/* Total de la venta */}

@@ -14,6 +14,12 @@ export default function AdminLayout({
 }) {
  const { isAuthenticated, isLoading } = useAuth();
  const router = useRouter();
+ const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+ const handleCloseSidebar = React.useCallback(() => setIsSidebarOpen(false), []);
+ const handleToggleSidebar = React.useCallback(
+   () => setIsSidebarOpen((prev) => !prev),
+   []
+ );
 
  // Añadimos un efecto para realizar la redirección fuera del render
  React.useEffect(() => {
@@ -37,10 +43,15 @@ export default function AdminLayout({
  // Usuario autenticado: mostrar layout normal
  return (
    <div className="min-h-screen bg-gray-100">
-     <Sidebar />
-     <div className="flex flex-col">
-       <Header />
-       <main className="ml-64 mt-16 p-6 md:p-8">{children}</main>
+     <Sidebar
+       isOpen={isSidebarOpen}
+       onClose={handleCloseSidebar}
+     />
+     <div className="flex min-h-screen flex-col">
+       <Header onToggleSidebar={handleToggleSidebar} />
+       <main className="mt-16 flex-1 p-4 sm:p-6 lg:ml-64 lg:p-8">
+         {children}
+       </main>
      </div>
    </div>
  );

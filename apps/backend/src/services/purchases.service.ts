@@ -1,6 +1,7 @@
 import prisma from '../utils/prisma.js';
 import { Prisma, StockMovementType, StockMovementSubType, LotStatus, PurchaseStatus, CashMovementType } from '@prisma/client';
 import type { Purchase, PurchaseItem, Supplier, Product, PurchaseFormData } from '@mi-tienda/types';
+import { applyCashMovementToBalance } from '../utils/cash-movement.js';
 
 // Tipo para los datos de entrada al crear una compra (sin incluir campos calculados)
 export type PurchaseData = {
@@ -105,9 +106,10 @@ const mapPurchase = (purchase: PrismaPurchaseWithRelations): Purchase => ({
 export const getAllPurchases = async (): Promise<Purchase[]> => {
   const purchases = await prisma.purchase.findMany({
     include: purchaseInclude,
-    orderBy: {
-      purchaseDate: 'desc',
-    },
+    orderBy: [
+      { purchaseDate: 'desc' },
+      { createdAt: 'desc' }
+    ],
   });
 
   return purchases.map(mapPurchase);
@@ -263,7 +265,7 @@ export const createPurchase = async (data: PurchaseFormData, userId: string): Pr
         description: `Compra a Proveedor #${newPurchase.supplierId}`,
         paymentMethod: newPurchase.paymentMethod as any,
         referenceId: newPurchase.id, // ¡Clave! Vincula a la compra
-        date: newPurchase.purchaseDate,
+        date: new Date(), // Usar fecha y hora actual para orden cronológico correcto
         previousBalance: previousBalance,
         newBalance: newBalance,
         userId: newPurchase.registeredById // El mismo usuario que registró la compra
@@ -374,6 +376,11 @@ export const updatePurchase = async (purchaseId: string, data: PurchaseFormData,
               quantity: {
                 [diff > 0 ? 'increment' : 'decrement']: Math.abs(diff)
               },
+              // --- NUEVO: Actualizar status automáticamente ---
+              status: (matchingLot.quantity + (diff > 0 ? Math.abs(diff) : -Math.abs(diff))) > 0
+                ? LotStatus.ACTIVO
+                : LotStatus.AGOTADO,
+              // --- FIN NUEVO ---
               originalQuantity: newQuantity,
               costPerUnit: newPrice,
               expiryDate: newItemData.fechaVencimiento ?? null,
@@ -592,12 +599,7 @@ export const updatePurchase = async (purchaseId: string, data: PurchaseFormData,
         let runningBalance = newBalance;
         for (const movement of subsequentMovements) {
           const prevBalance = runningBalance;
-          // Aplicar correctamente según el tipo de movimiento
-          if (movement.type === CashMovementType.ENTRADA) {
-            runningBalance = prevBalance.add(movement.amount);
-          } else {
-            runningBalance = prevBalance.sub(movement.amount);
-          }
+          runningBalance = applyCashMovementToBalance(prevBalance, movement);
 
           await tx.cashMovement.update({
             where: { id: movement.id },
@@ -699,37 +701,57 @@ export const annulPurchase = async (purchaseId: string, userId: string): Promise
       });
     }
 
-    // 7. Revertir movimiento de caja (crear entrada por anulación de compra)
-    // Buscar el movimiento de caja asociado a esta compra
+    // 7. Eliminar movimiento de caja original (en lugar de crear reversión)
+    // Esto elimina completamente el movimiento y recalcula saldos como si nunca hubiera existido
     const existingCashMovement = await tx.cashMovement.findFirst({
       where: { referenceId: purchaseId }
     });
 
     if (existingCashMovement) {
-      // Obtener el último movimiento de caja para calcular el balance actual
-      const lastMovement = await tx.cashMovement.findFirst({
-        orderBy: { date: 'desc' }
+      // Eliminar el movimiento de caja y recalcular saldos posteriores
+      await tx.cashMovement.delete({
+        where: { id: existingCashMovement.id }
       });
 
-      const previousBalance = lastMovement ? lastMovement.newBalance : new Prisma.Decimal(0);
-      // Al anular una compra, devolvemos el dinero (ENTRADA)
-      const newBalance = previousBalance.add(existingCashMovement.amount); // Sumar el monto original de la compra
-
-      // Crear movimiento de reversión con fecha actual
-      await tx.cashMovement.create({
-        data: {
-          type: CashMovementType.ENTRADA,
-          amount: existingCashMovement.amount, // Mismo monto que la compra original (positivo)
-          category: 'ANULACION_COMPRA',
-          description: `Anulación Compra ${purchaseId}`,
-          paymentMethod: existingCashMovement.paymentMethod,
-          referenceId: purchaseId,
-          date: new Date(),
-          previousBalance: previousBalance,
-          newBalance: newBalance,
-          userId: userId
+      // Recalcular saldos de todos los movimientos posteriores
+      const subsequentMovements = await tx.cashMovement.findMany({
+        where: {
+          date: {
+            gte: existingCashMovement.date
+          }
+        },
+        orderBy: {
+          date: 'asc'
         }
       });
+
+      // Obtener el último saldo válido antes del movimiento eliminado
+      const previousMovement = await tx.cashMovement.findFirst({
+        where: {
+          date: {
+            lt: existingCashMovement.date
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      });
+
+      let runningBalance = previousMovement ? previousMovement.newBalance : new Prisma.Decimal(0);
+
+      // Recalcular saldos para todos los movimientos posteriores
+      for (const movement of subsequentMovements) {
+        const prevBalance = runningBalance;
+        runningBalance = applyCashMovementToBalance(prevBalance, movement);
+
+        await tx.cashMovement.update({
+          where: { id: movement.id },
+          data: {
+            previousBalance: prevBalance,
+            newBalance: runningBalance
+          }
+        });
+      }
     }
 
     // 8. Finalmente, anular la Compra

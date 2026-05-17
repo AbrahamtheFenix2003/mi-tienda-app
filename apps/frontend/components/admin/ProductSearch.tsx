@@ -27,6 +27,18 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
+  // Prevenir envío del formulario con Enter en el input de búsqueda
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      // Si hay productos filtrados y solo uno, seleccionarlo automáticamente
+      if (filteredProducts.length === 1) {
+        handleSelect(filteredProducts[0]);
+      }
+    }
+  };
+
   // Filtrar productos basado en el término de búsqueda
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,6 +98,7 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
               setSearchTerm(e.target.value);
             }}
             onFocus={() => setIsFocused(true)}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className={`mt-1 sm:text-sm pl-10 pr-10 ${
               error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''
