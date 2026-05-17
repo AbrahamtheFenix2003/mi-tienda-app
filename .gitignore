@@ -12,3 +12,5 @@ dist
 *~
 *.kilo
 *.atl
+*.agents
+*skills-lock.json
