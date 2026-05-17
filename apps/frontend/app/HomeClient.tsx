@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Loader2, AlertTriangle, Sparkles, Package, Menu, X, Home, Search, ShoppingCart } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -54,6 +54,11 @@ export default function HomeClient() {
   }, [products, productId]);
   const isModalOpen = selectedProduct !== null;
 
+  const activeProducts = useMemo(
+    () => products.filter(p => p.isActive),
+    [products]
+  );
+
   // Filter products by category and search query
   const filteredProducts = useMemo(() => {
     let filtered = products.filter(p => p.isActive && p.stock > 0);
@@ -87,30 +92,38 @@ export default function HomeClient() {
   }, [products, selectedCategoryId, searchQuery]);
 
   // Handle product selection
-  const handleProductSelect = (product: Product) => {
+  const handleProductSelect = useCallback((product: Product) => {
     // Solo actualizamos la URL; el modal se abrirá porque selectedProduct se deriva desde la URL
     const params = new URLSearchParams(searchParams.toString());
     params.set('product', product.id.toString());
     router.push(`?${params.toString()}`, { scroll: false });
-  };
+  }, [router, searchParams]);
 
-  const handleScrollToTop = () => {
+  const handleScrollToTop = useCallback(() => {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, []);
 
-  const handleCategorySelect = (categoryId: number | null) => {
+  const handleCategorySelect = useCallback((categoryId: number | null) => {
     setSelectedCategoryId(categoryId);
     setIsSidebarOpen(false);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     // Eliminamos el param de la URL; la derivación cerrará el modal
     const params = new URLSearchParams(searchParams.toString());
     params.delete('product');
     router.push(`?${params.toString()}`, { scroll: false });
-  };
+  }, [router, searchParams]);
+
+  const handleCartOpen = useCallback(() => {
+    setIsCartOpen(true);
+  }, []);
+
+  const handleCartClose = useCallback(() => {
+    setIsCartOpen(false);
+  }, []);
 
   const isLoading = categoriesLoading || productsLoading;
 
@@ -118,10 +131,10 @@ export default function HomeClient() {
     <div className="min-h-screen bg-gray-50">
       {/* Public Header */}
       <PublicHeader
-        products={products.filter(p => p.isActive)}
+        products={activeProducts}
         onProductSelect={handleProductSelect}
         onSearchChange={setSearchQuery}
-        onCartClick={() => setIsCartOpen(true)}
+        onCartClick={handleCartOpen}
       />
 
       {/* Main Content */}
@@ -304,7 +317,7 @@ export default function HomeClient() {
             </button>
             <button
               type="button"
-              onClick={() => setIsCartOpen(true)}
+              onClick={handleCartOpen}
               className="relative flex flex-col items-center gap-1 text-gray-600 transition hover:text-rose-600"
             >
               <ShoppingCart className="h-5 w-5" />
@@ -331,7 +344,7 @@ export default function HomeClient() {
       {/* Cart Drawer */}
       <CartDrawer
         isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
+        onClose={handleCartClose}
       />
     </div>
   );
